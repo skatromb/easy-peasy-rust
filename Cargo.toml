@@ -70,7 +70,6 @@ std_instead_of_core = "allow"
 # rustc lints that are off by default
 ambiguous_negative_literals = "warn"
 closure_returning_async_block = "warn"
-deprecated_in_future = "warn"
 deref_into_dyn_supertrait = "warn"
 explicit_outlives_requirements = "warn"
 ffi_unwind_calls = "warn"
