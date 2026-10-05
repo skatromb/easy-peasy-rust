@@ -72,7 +72,6 @@ ambiguous_negative_literals = "warn"
 closure_returning_async_block = "warn"
 deprecated_in_future = "warn"
 deref_into_dyn_supertrait = "warn"
-elided_lifetimes_in_paths = "warn"
 explicit_outlives_requirements = "warn"
 ffi_unwind_calls = "warn"
 impl_trait_redundant_captures = "warn"
@@ -101,3 +100,8 @@ unused_macro_rules = "warn"
 unused_qualifications = "warn"
 unused_results = "warn"
 variant_size_differences = "warn"
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+toml_edit = "0.25.15"
