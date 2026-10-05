@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Result, ensure};
 use cargo_metadata::MetadataCommand;
 
 pub(crate) struct Workspace {
@@ -10,6 +10,8 @@ pub(crate) struct Workspace {
 
 impl Workspace {
     pub(crate) fn locate(path: &Path) -> Result<Self> {
+        ensure!(path.is_dir(), "{} is not a directory", path.display());
+
         let metadata = MetadataCommand::new()
             .current_dir(path)
             .no_deps()
