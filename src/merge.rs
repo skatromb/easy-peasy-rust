@@ -59,11 +59,11 @@ impl Display for Conflict {
 }
 
 pub(crate) fn lints(
-    manifest: &mut DocumentMut,
+    cargo_toml: &mut DocumentMut,
     preset: &DocumentMut,
     resolve: &mut impl FnMut(&Conflict) -> Result<bool>,
 ) -> Result<()> {
-    let root: &[&str] = if manifest.contains_key("workspace") {
+    let root: &[&str] = if cargo_toml.contains_key("workspace") {
         &["workspace", "lints"]
     } else {
         &["lints"]
@@ -74,7 +74,7 @@ pub(crate) fn lints(
             "rust" => Kind::RustcLint,
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
-        let target = table_at(manifest.as_table_mut(), &[root, &[tool]].concat())?;
+        let target = table_at(cargo_toml.as_table_mut(), &[root, &[tool]].concat())?;
         let flat = flatten(sections.as_table().context("preset tool is not a table")?);
         table(target, &flat, kind, resolve)?;
     }
