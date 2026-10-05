@@ -27,7 +27,7 @@ struct Args {
     #[arg(default_value = ".")]
     path: PathBuf,
     /// Take the preset's value on every conflict.
-    #[arg(short = 'y', long = "override")]
+    #[arg(short = 'y', long)]
     overwrite: bool,
 }
 

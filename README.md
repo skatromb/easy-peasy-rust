@@ -27,7 +27,7 @@ clippy::unwrap_used: yours "allow", preset "deny"
 Take the preset's value? [y/N]
 ```
 
-Enter keeps yours, and so does a non-interactive run. Pass `-y` (`--override`) to take the preset's
+Enter keeps yours, and so does a non-interactive run. Pass `-y` (`--overwrite`) to take the preset's
 value on every conflict. Keys the preset does not know about are never touched. Re-run after
 upgrading to pick up new lints.
 
