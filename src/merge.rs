@@ -1,4 +1,5 @@
 use std::fmt::{self, Display, Formatter};
+use std::io::{Write as _, stdin, stdout};
 
 use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, RawString, Table, Value};
@@ -12,7 +13,7 @@ pub(crate) enum Kind {
     ClippySetting,
 }
 
-pub(crate) struct Conflict {
+struct Conflict {
     kind: Kind,
     key: String,
     yours: String,
@@ -20,6 +21,22 @@ pub(crate) struct Conflict {
 }
 
 impl Conflict {
+    fn resolve(&self, overwrite: bool) -> Result<bool> {
+        let mut out = stdout().lock();
+        writeln!(out, "{self}")?;
+
+        if overwrite {
+            writeln!(out, "Replaced yours")?;
+            return Ok(true);
+        }
+
+        write!(out, "Take the preset's value? [y/N] ")?;
+        out.flush()?;
+        let answer = stdin().lines().next().transpose()?.unwrap_or_default();
+
+        Ok(answer.trim().eq_ignore_ascii_case("y"))
+    }
+
     fn docs(&self) -> String {
         let key = &self.key;
         match self.kind {
@@ -61,7 +78,7 @@ impl Display for Conflict {
 pub(crate) fn lints(
     cargo_toml: &mut DocumentMut,
     preset: &DocumentMut,
-    resolve: &mut impl FnMut(&Conflict) -> Result<bool>,
+    overwrite: bool,
 ) -> Result<()> {
     let root: &[&str] = if cargo_toml.contains_key("workspace") {
         &["workspace", "lints"]
@@ -76,17 +93,12 @@ pub(crate) fn lints(
         };
         let target = table_at(cargo_toml.as_table_mut(), &[root, &[tool]].concat())?;
         let flat = flatten(sections.as_table().context("preset tool is not a table")?);
-        table(target, &flat, kind, resolve)?;
+        table(target, &flat, kind, overwrite)?;
     }
     Ok(())
 }
 
-pub(crate) fn table(
-    target: &mut Table,
-    preset: &Table,
-    kind: Kind,
-    resolve: &mut impl FnMut(&Conflict) -> Result<bool>,
-) -> Result<()> {
+pub(crate) fn table(target: &mut Table, preset: &Table, kind: Kind, overwrite: bool) -> Result<()> {
     for (key, setting) in entries(preset) {
         match target.get_mut(key.get()) {
             None => drop(target.insert_formatted(key, setting.clone())),
@@ -98,7 +110,7 @@ pub(crate) fn table(
                     yours: undecorated(current),
                     preset: undecorated(setting),
                 };
-                if resolve(&conflict)? {
+                if conflict.resolve(overwrite)? {
                     *current = setting.clone();
                 }
             }

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, Result, ensure};
 use clap::{Args, Parser};
-use merge::{Conflict, Kind};
+use merge::Kind;
 use toml_edit::DocumentMut;
 
 const LINTS: &str = include_str!("../preset/lints.toml");
@@ -61,31 +61,14 @@ fn install(path: &Path, overwrite: bool) -> Result<()> {
 
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut decide = |conflict: &Conflict| resolve(conflict, overwrite);
 
     let mut cargo_toml = load(&cargo_toml_path)?;
-    merge::lints(&mut cargo_toml, &lints, &mut decide)?;
+    merge::lints(&mut cargo_toml, &lints, overwrite)?;
     save(&cargo_toml_path, &cargo_toml)?;
 
     let mut clippy_toml = load(&clippy_toml_path)?;
-    merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
+    merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, overwrite)?;
     save(&clippy_toml_path, &clippy_toml)
-}
-
-fn resolve(conflict: &Conflict, overwrite: bool) -> Result<bool> {
-    let mut out = stdout().lock();
-    writeln!(out, "{conflict}")?;
-
-    if overwrite {
-        writeln!(out, "Replaced yours")?;
-        return Ok(true);
-    }
-
-    write!(out, "Take the preset's value? [y/N] ")?;
-    out.flush()?;
-    let answer = stdin().lines().next().transpose()?.unwrap_or_default();
-
-    Ok(answer.trim().eq_ignore_ascii_case("y"))
 }
 
 fn load(path: &Path) -> Result<DocumentMut> {
