@@ -1,90 +1,49 @@
-use std::fmt::{self, Display, Formatter};
-use std::io::{Write as _, stdin, stdout};
+use std::iter;
 
 use anyhow::{Context as _, Result, bail};
-use toml_edit::{DocumentMut, Item, Key, Table, Value};
+use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
-const CLIPPY_GROUPS: [&str; 3] = ["nursery", "pedantic", "restriction"];
+use crate::conflict::{Conflict, Kind};
 
-#[derive(Clone, Copy)]
-pub(crate) enum Kind {
-    ClippyLint,
-    RustcLint,
-    ClippySetting,
-}
+const LINTS: &str = include_str!("../preset/lints.toml");
+const SETTINGS: &str = include_str!("../preset/clippy.toml");
 
-struct Conflict {
-    kind: Kind,
-    key: String,
-    yours: String,
-    preset: String,
-}
-
-impl Conflict {
-    fn resolve(&self, overwrite: bool) -> Result<bool> {
-        let mut out = stdout().lock();
-        writeln!(out, "{self}")?;
-
-        if overwrite {
-            writeln!(out, "Replaced yours")?;
-            return Ok(true);
-        }
-
-        write!(out, "Take the preset's value? [y/N] ")?;
-        out.flush()?;
-        let answer = stdin().lines().next().transpose()?.unwrap_or_default();
-
-        Ok(answer.trim().eq_ignore_ascii_case("y"))
-    }
-
-    fn docs(&self) -> String {
-        let key = &self.key;
-        match self.kind {
-            Kind::ClippyLint if CLIPPY_GROUPS.contains(&key.as_str()) => {
-                format!("https://doc.rust-lang.org/clippy/lints.html#{key}")
-            }
-            Kind::ClippyLint => {
-                format!("https://rust-lang.github.io/rust-clippy/master/index.html#{key}")
-            }
-            Kind::RustcLint => format!(
-                "https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html#{}",
-                key.replace('_', "-")
-            ),
-            Kind::ClippySetting => {
-                format!("https://doc.rust-lang.org/clippy/lint_configuration.html#{key}")
-            }
-        }
-    }
-}
-
-impl Display for Conflict {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let prefix = match self.kind {
-            Kind::ClippyLint => "clippy::",
-            Kind::RustcLint | Kind::ClippySetting => "",
-        };
-        let Self {
-            key, yours, preset, ..
-        } = self;
-        write!(
-            f,
-            "{prefix}{key}: yours {yours}, preset {preset}\n  {}",
-            self.docs()
-        )
-    }
-}
-
-pub(crate) fn lints(
-    cargo_toml: &mut DocumentMut,
-    preset: &DocumentMut,
-    overwrite: bool,
-) -> Result<()> {
-    let path: &[&str] = if cargo_toml.contains_key("workspace") {
+pub(crate) fn lints(cargo_toml: &mut DocumentMut, overwrite: bool) -> Result<()> {
+    let is_workspace = cargo_toml.contains_key("workspace");
+    let path: &[&str] = if is_workspace {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    let root = table_at(cargo_toml.as_table_mut(), path)?;
+    tools(table_at(cargo_toml, path)?, overwrite)?;
+
+    if is_workspace && cargo_toml.contains_key("package") {
+        inherit(cargo_toml, "Cargo.toml", overwrite)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, overwrite: bool) -> Result<()> {
+    let preset = Item::Table(iter::once(("workspace", value(true))).collect());
+    match cargo_toml.get_mut("lints") {
+        None => drop(cargo_toml.insert("lints", preset)),
+        Some(current) if same(current, &preset) => {}
+        Some(current) => {
+            if Conflict::new(Kind::Inheritance, name, current, &preset).resolve(overwrite)? {
+                *current = preset;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn settings(clippy_toml: &mut DocumentMut, overwrite: bool) -> Result<()> {
+    let preset: DocumentMut = SETTINGS.parse()?;
+    table(clippy_toml, &preset, Kind::ClippySetting, overwrite)
+}
+
+fn tools(target: &mut Table, overwrite: bool) -> Result<()> {
+    let preset: DocumentMut = LINTS.parse()?;
     for (tool, lints) in preset.iter() {
         let kind = match tool {
             "clippy" => Kind::ClippyLint,
@@ -92,24 +51,18 @@ pub(crate) fn lints(
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
         let preset_lints = lints.as_table().context("preset tool is not a table")?;
-        table(table_at(root, &[tool])?, preset_lints, kind, overwrite)?;
+        table(table_at(target, &[tool])?, preset_lints, kind, overwrite)?;
     }
     Ok(())
 }
 
-pub(crate) fn table(target: &mut Table, preset: &Table, kind: Kind, overwrite: bool) -> Result<()> {
+fn table(target: &mut Table, preset: &Table, kind: Kind, overwrite: bool) -> Result<()> {
     for (key, setting) in entries(preset) {
         match target.get_mut(key.get()) {
             None => drop(target.insert_formatted(key, setting.clone())),
             Some(current) if same(current, setting) => {}
             Some(current) => {
-                let conflict = Conflict {
-                    kind,
-                    key: key.get().to_owned(),
-                    yours: undecorated(current),
-                    preset: undecorated(setting),
-                };
-                if conflict.resolve(overwrite)? {
+                if Conflict::new(kind, key.get(), current, setting).resolve(overwrite)? {
                     *current = setting.clone();
                 }
             }
@@ -140,18 +93,11 @@ fn implicit_table() -> Item {
     Item::Table(table)
 }
 
-fn undecorated(setting: &Item) -> String {
-    setting.as_value().map_or_else(
-        || setting.to_string(),
-        |plain| plain.clone().decorated("", "").to_string(),
-    )
-}
-
 fn same(current: &Item, setting: &Item) -> bool {
-    current
-        .as_value()
-        .zip(setting.as_value())
-        .is_some_and(|(mine, theirs)| equal(mine, theirs))
+    match (current.clone().into_value(), setting.clone().into_value()) {
+        (Ok(mine), Ok(theirs)) => equal(&mine, &theirs),
+        _ => false,
+    }
 }
 
 fn equal(mine: &Value, theirs: &Value) -> bool {

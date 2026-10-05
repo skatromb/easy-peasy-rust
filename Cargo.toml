@@ -102,5 +102,10 @@ variant_size_differences = "warn"
 
 [dependencies]
 anyhow = "1.0.104"
+cargo_metadata = "0.23.1"
 clap = { version = "4.6.7", features = ["derive"] }
 toml_edit = "0.25.15"
+
+[dev-dependencies]
+rexpect = "0.7.1"
+tempfile = "3.27.0"
