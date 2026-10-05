@@ -8,6 +8,7 @@ license = "MIT"
 repository = "https://github.com/skatromb/easy-peasy-rust"
 keywords = ["cargo", "clippy", "lints", "subcommand"]
 categories = ["development-tools::cargo-plugins"]
+include = ["/src", "/preset", "/tests", "/README.md", "/LICENSE"]
 
 [[bin]]
 name = "cargo-easy-peasy"
