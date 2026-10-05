@@ -59,10 +59,9 @@ impl Conflict {
 
 impl Display for Conflict {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let prefix = if matches!(self.kind, Kind::ClippyLint) {
-            "clippy::"
-        } else {
-            ""
+        let prefix = match self.kind {
+            Kind::ClippyLint => "clippy::",
+            Kind::RustcLint | Kind::ClippySetting => "",
         };
         let Self {
             key, yours, preset, ..
