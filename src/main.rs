@@ -18,6 +18,7 @@ use workspace::Workspace;
 #[command(name = "cargo", bin_name = "cargo")]
 enum Cargo {
     /// Install the easy-peasy-rust lint preset into a crate or workspace.
+    #[command(version)]
     EasyPeasy(CliArgs),
 }
 
