@@ -8,7 +8,7 @@ allow-unwrap-in-tests = true
 allowed-idents-below-min-chars = []
 min-ident-chars-threshold = 2
 disallowed-names = [
-    "arr", "bar", "baz", "content", "contents", "data", "do", "false", "foo", "ham",
+    "arr", "args", "bar", "baz", "content", "contents", "data", "do", "false", "foo", "ham",
     "handle", "handler", "info", "item", "items", "no", "obj", "object", "objects", "objs", "param",
     "params", "parameters", "result", "results", "some", "spam", "temp", "tmp", "true", "val",
     "vals", "value", "values", "var", "variable", "vars", "wrapper",

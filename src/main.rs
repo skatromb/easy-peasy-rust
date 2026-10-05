@@ -7,7 +7,7 @@ use std::io::{ErrorKind, IsTerminal as _, Write as _, stdin, stdout};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, Result, ensure};
-use clap::Parser;
+use clap::{Args, Parser};
 use merge::{Conflict, Kind};
 use toml_edit::DocumentMut;
 
@@ -18,11 +18,11 @@ const CLIPPY: &str = include_str!("../preset/clippy.toml");
 #[command(name = "cargo", bin_name = "cargo")]
 enum Cargo {
     /// Install the easy-peasy-rust lint preset into a crate or workspace.
-    EasyPeasy(Args),
+    EasyPeasy(CliArgs),
 }
 
-#[derive(clap::Args)]
-struct Args {
+#[derive(Args)]
+struct CliArgs {
     /// Crate or workspace root.
     #[arg(default_value = ".")]
     path: PathBuf,
@@ -32,20 +32,20 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    let Cargo::EasyPeasy(args) = Cargo::parse();
-    let manifest = args.path.join("Cargo.toml");
+    let Cargo::EasyPeasy(cli_args) = Cargo::parse();
+    let manifest = cli_args.path.join("Cargo.toml");
 
     ensure!(
         manifest.is_file(),
         "no Cargo.toml in {}",
-        args.path.display()
+        cli_args.path.display()
     );
     ensure!(
-        args.overwrite || stdin().is_terminal(),
+        cli_args.overwrite || stdin().is_terminal(),
         "Runs as non-interactive — use `--overwrite` to overwrite all lint settings"
     );
 
-    install(&args, &manifest)?;
+    install(&cli_args, &manifest)?;
 
     writeln!(
         stdout(),
@@ -55,16 +55,16 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn install(args: &Args, manifest: &Path) -> Result<()> {
+fn install(cli_args: &CliArgs, manifest: &Path) -> Result<()> {
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut decide = |conflict: &Conflict| resolve(conflict, args.overwrite);
+    let mut decide = |conflict: &Conflict| resolve(conflict, cli_args.overwrite);
 
     let mut cargo_toml = load(manifest)?;
     merge::lints(&mut cargo_toml, &lints, &mut decide)?;
     save(manifest, &cargo_toml)?;
 
-    let config = args.path.join("clippy.toml");
+    let config = cli_args.path.join("clippy.toml");
     let mut clippy_toml = load(&config)?;
     merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
     save(&config, &clippy_toml)
