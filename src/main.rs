@@ -42,8 +42,7 @@ fn main() -> Result<()> {
     );
     ensure!(
         args.overwrite || stdin().is_terminal(),
-        "stdin is not a terminal, so conflicts can't be asked about; \
-         pass --overwrite to take the preset's value on every conflict"
+        "Runs as non-interactive — use `--overwrite` to overwrite all lint settings"
     );
 
     install(&args, &manifest)?;
