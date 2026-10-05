@@ -34,55 +34,72 @@ struct Args {
 fn main() -> Result<()> {
     let Cargo::EasyPeasy(args) = Cargo::parse();
     let manifest = args.path.join("Cargo.toml");
+
     ensure!(
         manifest.is_file(),
         "no Cargo.toml in {}",
         args.path.display()
     );
+
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
     let mut decide = |conflict: &Conflict| resolve(conflict, args.overwrite);
-    update(&manifest, |doc| merge::lints(doc, &lints, &mut decide))?;
-    update(&args.path.join("clippy.toml"), |doc| {
-        merge::table(doc, &clippy, Kind::ClippySetting, &mut decide)
-    })?;
+
+    let mut cargo_toml = load(&manifest)?;
+    merge::lints(&mut cargo_toml, &lints, &mut decide)?;
+    save(&manifest, &cargo_toml)?;
+
+    let config = args.path.join("clippy.toml");
+    let mut clippy_toml = load(&config)?;
+    merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
+    save(&config, &clippy_toml)?;
+
     writeln!(
         stdout(),
         "Run `cargo clippy --all-targets` to see what it flags."
     )?;
+
     Ok(())
 }
 
 fn resolve(conflict: &Conflict, overwrite: bool) -> Result<bool> {
     let mut out = stdout().lock();
     writeln!(out, "{conflict}")?;
+
     if overwrite {
         writeln!(out, "Replaced yours")?;
         return Ok(true);
     }
+
     if !stdin().is_terminal() {
         writeln!(out, "Kept yours")?;
         return Ok(false);
     }
+
     write!(out, "Take the preset's value? [y/N] ")?;
     out.flush()?;
     let answer = stdin().lines().next().transpose()?.unwrap_or_default();
+
     Ok(answer.trim().eq_ignore_ascii_case("y"))
 }
 
-fn update(path: &Path, apply: impl FnOnce(&mut DocumentMut) -> Result<()>) -> Result<()> {
-    let before = read(path)?;
-    let mut doc: DocumentMut = before.as_deref().unwrap_or_default().parse()?;
-    apply(&mut doc)?;
+fn load(path: &Path) -> Result<DocumentMut> {
+    Ok(read(path)?.unwrap_or_default().parse()?)
+}
+
+fn save(path: &Path, doc: &DocumentMut) -> Result<()> {
     let after = doc.to_string();
-    let status = match before {
+
+    let status = match read(path)? {
         None => "Created",
-        Some(text) if text == after => "Unchanged",
+        Some(before) if before == after => "Unchanged",
         Some(_) => "Updated",
     };
+
     if status != "Unchanged" {
         fs::write(path, after).with_context(|| format!("writing {}", path.display()))?;
     }
+
     writeln!(stdout(), "{status} {}", path.display())?;
     Ok(())
 }
