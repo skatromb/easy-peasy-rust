@@ -40,19 +40,13 @@ fn main() -> Result<()> {
         "no Cargo.toml in {}",
         args.path.display()
     );
+    ensure!(
+        args.overwrite || stdin().is_terminal(),
+        "stdin is not a terminal, so conflicts can't be asked about; \
+         pass --overwrite to take the preset's value on every conflict"
+    );
 
-    let lints: DocumentMut = LINTS.parse()?;
-    let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut decide = |conflict: &Conflict| resolve(conflict, args.overwrite);
-
-    let mut cargo_toml = load(&manifest)?;
-    merge::lints(&mut cargo_toml, &lints, &mut decide)?;
-    save(&manifest, &cargo_toml)?;
-
-    let config = args.path.join("clippy.toml");
-    let mut clippy_toml = load(&config)?;
-    merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
-    save(&config, &clippy_toml)?;
+    install(&args, &manifest)?;
 
     writeln!(
         stdout(),
@@ -62,6 +56,21 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn install(args: &Args, manifest: &Path) -> Result<()> {
+    let lints: DocumentMut = LINTS.parse()?;
+    let clippy: DocumentMut = CLIPPY.parse()?;
+    let mut decide = |conflict: &Conflict| resolve(conflict, args.overwrite);
+
+    let mut cargo_toml = load(manifest)?;
+    merge::lints(&mut cargo_toml, &lints, &mut decide)?;
+    save(manifest, &cargo_toml)?;
+
+    let config = args.path.join("clippy.toml");
+    let mut clippy_toml = load(&config)?;
+    merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
+    save(&config, &clippy_toml)
+}
+
 fn resolve(conflict: &Conflict, overwrite: bool) -> Result<bool> {
     let mut out = stdout().lock();
     writeln!(out, "{conflict}")?;
@@ -69,11 +78,6 @@ fn resolve(conflict: &Conflict, overwrite: bool) -> Result<bool> {
     if overwrite {
         writeln!(out, "Replaced yours")?;
         return Ok(true);
-    }
-
-    if !stdin().is_terminal() {
-        writeln!(out, "Kept yours")?;
-        return Ok(false);
     }
 
     write!(out, "Take the preset's value? [y/N] ")?;
