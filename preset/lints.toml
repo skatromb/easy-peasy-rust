@@ -1,5 +1,5 @@
+[clippy]
 # Everything on, then allow what does not fit
-[clippy.groups]
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 redundant_pub_crate = "allow"
@@ -7,7 +7,6 @@ restriction = { level = "warn", priority = -1 }
 blanket_clippy_restriction_lints = "allow"
 
 # Don't panic
-[clippy.panics]
 arithmetic_side_effects = "deny"
 cast_abs_to_unsigned = "deny"
 expect_used = "deny"
@@ -22,7 +21,6 @@ unreachable = "deny"
 unwrap_used = "deny"
 
 # Readable code: the restriction lints that fit, the rest allowed
-[clippy.restriction]
 arbitrary_source_item_ordering = "allow"
 assertions_on_result_states = "allow"
 big_endian_bytes = "allow"
@@ -53,8 +51,8 @@ single_call_fn = "allow"
 std_instead_of_alloc = "allow"
 std_instead_of_core = "allow"
 
+[rust]
 # rustc lints that are off by default
-[rust.strict]
 ambiguous_negative_literals = "warn"
 closure_returning_async_block = "warn"
 deref_into_dyn_supertrait = "warn"

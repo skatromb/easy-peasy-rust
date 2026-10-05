@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 use std::io::{Write as _, stdin, stdout};
 
 use anyhow::{Context as _, Result, bail};
-use toml_edit::{DocumentMut, Item, Key, RawString, Table, Value};
+use toml_edit::{DocumentMut, Item, Key, Table, Value};
 
 const CLIPPY_GROUPS: [&str; 3] = ["nursery", "pedantic", "restriction"];
 
@@ -79,20 +79,20 @@ pub(crate) fn lints(
     preset: &DocumentMut,
     overwrite: bool,
 ) -> Result<()> {
-    let root: &[&str] = if cargo_toml.contains_key("workspace") {
+    let path: &[&str] = if cargo_toml.contains_key("workspace") {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    for (tool, sections) in preset.iter() {
+    let root = table_at(cargo_toml.as_table_mut(), path)?;
+    for (tool, lints) in preset.iter() {
         let kind = match tool {
             "clippy" => Kind::ClippyLint,
             "rust" => Kind::RustcLint,
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
-        let target = table_at(cargo_toml.as_table_mut(), &[root, &[tool]].concat())?;
-        let flat = flatten(sections.as_table().context("preset tool is not a table")?);
-        table(target, &flat, kind, overwrite)?;
+        let preset_lints = lints.as_table().context("preset tool is not a table")?;
+        table(table_at(root, &[tool])?, preset_lints, kind, overwrite)?;
     }
     Ok(())
 }
@@ -116,26 +116,6 @@ pub(crate) fn table(target: &mut Table, preset: &Table, kind: Kind, overwrite: b
         }
     }
     Ok(())
-}
-
-fn flatten(sections: &Table) -> Table {
-    let mut flat = Table::new();
-    for section in sections.iter().filter_map(|(_, entry)| entry.as_table()) {
-        let gap = if flat.is_empty() { "" } else { "\n" };
-        let mut header = section
-            .decor()
-            .prefix()
-            .and_then(RawString::as_str)
-            .map(|comment| format!("{gap}{}", comment.trim_start()));
-        for (key, lint) in entries(section) {
-            let mut leaf = key.clone();
-            if let Some(comment) = header.take() {
-                leaf.leaf_decor_mut().set_prefix(comment);
-            }
-            drop(flat.insert_formatted(&leaf, lint.clone()));
-        }
-    }
-    flat
 }
 
 fn entries(table: &Table) -> impl Iterator<Item = (&Key, &Item)> {
