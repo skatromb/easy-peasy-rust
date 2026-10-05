@@ -49,13 +49,12 @@ fn install(dir: &TempDir, flags: &[&str]) -> Result<Output> {
         .output()?)
 }
 
-fn clippy_passes(dir: &TempDir) -> Result<bool> {
-    let status = Command::new(env!("CARGO"))
+fn clippy_is_silent(dir: &TempDir) -> Result<bool> {
+    let output = Command::new(env!("CARGO"))
         .args(["clippy", "--quiet", "--workspace", "--all-targets"])
-        .args(["--", "--deny", "warnings"])
         .current_dir(dir.path())
-        .status()?;
-    Ok(status.success())
+        .output()?;
+    Ok(output.status.success() && output.stderr.is_empty())
 }
 
 #[test]
@@ -84,7 +83,7 @@ fn installs_into_a_crate() {
     assert!(cargo_toml.contains("\n[lints.clippy]\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     assert_eq!(read(&dir, "clippy.toml").unwrap(), SETTINGS);
-    assert!(clippy_passes(&dir).unwrap());
+    assert!(clippy_is_silent(&dir).unwrap());
 }
 
 #[test]
@@ -102,7 +101,7 @@ fn installs_into_a_virtual_workspace() {
         let member_toml = read(&dir, &format!("crates/{name}/Cargo.toml")).unwrap();
         assert_eq!(member_toml, format!("{}{INHERITED}", package(name)));
     }
-    assert!(clippy_passes(&dir).unwrap());
+    assert!(clippy_is_silent(&dir).unwrap());
 }
 
 #[test]
@@ -114,7 +113,7 @@ fn installs_into_a_root_package() {
     let cargo_toml = read(&dir, "Cargo.toml").unwrap();
     assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
     assert!(cargo_toml.ends_with(INHERITED));
-    assert!(clippy_passes(&dir).unwrap());
+    assert!(clippy_is_silent(&dir).unwrap());
 }
 
 #[test]
