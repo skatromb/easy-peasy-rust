@@ -3,6 +3,7 @@
 mod conflict;
 mod merge;
 mod toml_file;
+mod toolchain;
 mod workspace;
 
 use std::io::{IsTerminal as _, Write as _, stdin, stdout};
@@ -51,6 +52,7 @@ fn main() -> Result<()> {
 fn install(path: &Path, overwrite: bool) -> Result<()> {
     let workspace = Workspace::locate(path)?;
     let root = workspace.root();
+    toolchain::warn_if_older(root)?;
 
     let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
     merge::lints(cargo_toml.doc_mut(), overwrite)?;
