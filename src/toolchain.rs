@@ -23,8 +23,8 @@ pub(crate) fn warn_if_older(root: &Path) -> Result<()> {
     if (rustc.major, rustc.minor) < (preset.major, preset.minor) {
         writeln!(
             stderr(),
-            "warning: rustc {rustc} is older than Rust {}.{}, which the preset targets; \
-             lints it does not know will trip `unknown_lints`",
+            "warning: rustc {rustc} is older than Rust {}.{}, which the preset targets, \
+             so it will warn about lints it does not know",
             preset.major,
             preset.minor,
         )?;

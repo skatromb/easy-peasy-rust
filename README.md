@@ -12,12 +12,12 @@ cargo install easy-peasy-rust
 cargo easy-peasy
 ```
 
-Run it at the root of a workspace or a single crate. It writes:
+Run it anywhere inside a workspace or a single crate, or pass the path. It writes:
 
 - `[workspace.lints.clippy]` and `[workspace.lints.rust]` into the root `Cargo.toml`
   (`[lints.*]` for a single crate),
-- `[lints] workspace = true` into every member crate,
-- `clippy.toml` with the thresholds.
+- `[lints] workspace = true` into every member crate, the root package included,
+- the thresholds into `clippy.toml`, or into `.clippy.toml` if that is what you have.
 
 For each setting you already have that differs from the preset, it shows the lint's docs and asks:
 
@@ -28,8 +28,9 @@ Take the preset's value? [y/N]
 ```
 
 Enter keeps yours. Pass `-y` (`--overwrite`) to take the preset's value on every conflict; without a
-terminal to ask in, it is required. Keys the preset does not know about are never touched. Re-run after
-upgrading to pick up new lints.
+terminal to ask in, it is required. Keys the preset does not know about are never touched. A member
+crate with its own `[lints]` is a conflict too: keeping yours leaves that crate out of the preset.
+Re-run after upgrading to pick up new lints.
 
 Then:
 
@@ -48,8 +49,8 @@ your edits unless you answer `y` or pass `-y`.
 ## Versioning
 
 The crate version tracks the Rust release the preset was curated against: `1.99.x` targets
-Rust 1.99. On an older toolchain unknown lint names only trigger `unknown_lints`, but that fails
-`-D warnings`, so match the version to your toolchain: `cargo install easy-peasy-rust@1.95`.
+Rust 1.99. A workspace pinned to an older toolchain still works, but that rustc prints an
+`unknown lint` warning for every lint it does not have yet, so the installer warns you up front.
 
 ## From WPS to clippy
 
