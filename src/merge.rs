@@ -1,41 +1,110 @@
-use anyhow::{Context as _, Result};
+use std::fmt::{self, Display, Formatter};
+
+use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, RawString, Table, Value};
+
+const CLIPPY_GROUPS: [&str; 3] = ["nursery", "pedantic", "restriction"];
+
+#[derive(Clone, Copy)]
+pub(crate) enum Kind {
+    ClippyLint,
+    RustcLint,
+    ClippySetting,
+}
+
+pub(crate) struct Conflict {
+    kind: Kind,
+    key: String,
+    yours: String,
+    preset: String,
+}
+
+impl Conflict {
+    fn docs(&self) -> String {
+        let key = &self.key;
+        match self.kind {
+            Kind::ClippyLint if CLIPPY_GROUPS.contains(&key.as_str()) => {
+                format!("https://doc.rust-lang.org/clippy/lints.html#{key}")
+            }
+            Kind::ClippyLint => {
+                format!("https://rust-lang.github.io/rust-clippy/master/index.html#{key}")
+            }
+            Kind::RustcLint => format!(
+                "https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html#{}",
+                key.replace('_', "-")
+            ),
+            Kind::ClippySetting => {
+                format!("https://doc.rust-lang.org/clippy/lint_configuration.html#{key}")
+            }
+        }
+    }
+}
+
+impl Display for Conflict {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let prefix = if matches!(self.kind, Kind::ClippyLint) {
+            "clippy::"
+        } else {
+            ""
+        };
+        let Self {
+            key, yours, preset, ..
+        } = self;
+        write!(
+            f,
+            "{prefix}{key}: yours {yours}, preset {preset}\n  {}",
+            self.docs()
+        )
+    }
+}
 
 pub(crate) fn lints(
     manifest: &mut DocumentMut,
     preset: &DocumentMut,
-    take_preset: bool,
-) -> Result<Vec<String>> {
+    resolve: &mut impl FnMut(&Conflict) -> Result<bool>,
+) -> Result<()> {
     let root: &[&str] = if manifest.contains_key("workspace") {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    let mut conflicts = Vec::new();
     for (tool, sections) in preset.iter() {
+        let kind = match tool {
+            "clippy" => Kind::ClippyLint,
+            "rust" => Kind::RustcLint,
+            _ => bail!("unknown lint tool `{tool}` in the preset"),
+        };
         let target = table_at(manifest.as_table_mut(), &[root, &[tool]].concat())?;
         let flat = flatten(sections.as_table().context("preset tool is not a table")?);
-        let found = table(target, &flat, take_preset);
-        conflicts.extend(found.iter().map(|conflict| format!("{tool}.{conflict}")));
+        table(target, &flat, kind, resolve)?;
     }
-    Ok(conflicts)
+    Ok(())
 }
 
-pub(crate) fn table(target: &mut Table, preset: &Table, take_preset: bool) -> Vec<String> {
-    let mut conflicts = Vec::new();
+pub(crate) fn table(
+    target: &mut Table,
+    preset: &Table,
+    kind: Kind,
+    resolve: &mut impl FnMut(&Conflict) -> Result<bool>,
+) -> Result<()> {
     for (key, setting) in entries(preset) {
         match target.get_mut(key.get()) {
             None => drop(target.insert_formatted(key, setting.clone())),
             Some(current) if same(current, setting) => {}
             Some(current) => {
-                conflicts.push(format!("{} = {}", key.get(), undecorated(current)));
-                if take_preset {
+                let conflict = Conflict {
+                    kind,
+                    key: key.get().to_owned(),
+                    yours: undecorated(current),
+                    preset: undecorated(setting),
+                };
+                if resolve(&conflict)? {
                     *current = setting.clone();
                 }
             }
         }
     }
-    conflicts
+    Ok(())
 }
 
 fn flatten(sections: &Table) -> Table {

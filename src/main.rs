@@ -3,11 +3,12 @@
 mod merge;
 
 use std::fs;
-use std::io::{ErrorKind, Write, stdout};
+use std::io::{ErrorKind, IsTerminal as _, Write as _, stdin, stdout};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, Result, ensure};
 use clap::{Args, Parser};
+use merge::{Conflict, Kind};
 use toml_edit::DocumentMut;
 
 const LINTS: &str = include_str!("../preset/lints.toml");
@@ -40,26 +41,39 @@ fn main() -> Result<()> {
     );
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut out = stdout().lock();
-    let mut conflicts = update(&manifest, &mut out, |doc| {
-        merge::lints(doc, &lints, install.take_preset)
+    let mut decide = |conflict: &Conflict| resolve(conflict, install.take_preset);
+    update(&manifest, |doc| merge::lints(doc, &lints, &mut decide))?;
+    update(&install.path.join("clippy.toml"), |doc| {
+        merge::table(doc, &clippy, Kind::ClippySetting, &mut decide)
     })?;
-    conflicts.extend(update(
-        &install.path.join("clippy.toml"),
-        &mut out,
-        |doc| Ok(merge::table(doc, &clippy, install.take_preset)),
-    )?);
-    report(&mut out, &conflicts, install.take_preset)
+    writeln!(
+        stdout(),
+        "Run `cargo clippy --all-targets` to see what it flags."
+    )?;
+    Ok(())
 }
 
-fn update(
-    path: &Path,
-    out: &mut impl Write,
-    apply: impl FnOnce(&mut DocumentMut) -> Result<Vec<String>>,
-) -> Result<Vec<String>> {
+fn resolve(conflict: &Conflict, take_preset: bool) -> Result<bool> {
+    let mut out = stdout().lock();
+    writeln!(out, "{conflict}")?;
+    if take_preset {
+        writeln!(out, "Replaced yours")?;
+        return Ok(true);
+    }
+    if !stdin().is_terminal() {
+        writeln!(out, "Kept yours")?;
+        return Ok(false);
+    }
+    write!(out, "Take the preset's value? [y/N] ")?;
+    out.flush()?;
+    let answer = stdin().lines().next().transpose()?.unwrap_or_default();
+    Ok(answer.trim().eq_ignore_ascii_case("y"))
+}
+
+fn update(path: &Path, apply: impl FnOnce(&mut DocumentMut) -> Result<()>) -> Result<()> {
     let before = read(path)?;
     let mut doc: DocumentMut = before.as_deref().unwrap_or_default().parse()?;
-    let conflicts = apply(&mut doc)?;
+    apply(&mut doc)?;
     let after = doc.to_string();
     let status = match before {
         None => "Created",
@@ -69,8 +83,8 @@ fn update(
     if status != "Unchanged" {
         fs::write(path, after).with_context(|| format!("writing {}", path.display()))?;
     }
-    writeln!(out, "{status} {}", path.display())?;
-    Ok(conflicts)
+    writeln!(stdout(), "{status} {}", path.display())?;
+    Ok(())
 }
 
 fn read(path: &Path) -> Result<Option<String>> {
@@ -79,20 +93,4 @@ fn read(path: &Path) -> Result<Option<String>> {
         Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error).with_context(|| format!("reading {}", path.display())),
     }
-}
-
-fn report(out: &mut impl Write, conflicts: &[String], take_preset: bool) -> Result<()> {
-    let verdict = if take_preset {
-        "Replaced yours"
-    } else {
-        "Kept yours"
-    };
-    for conflict in conflicts {
-        writeln!(out, "{verdict}: {conflict}")?;
-    }
-    writeln!(
-        out,
-        "Run `cargo clippy --all-targets` to see what it flags."
-    )?;
-    Ok(())
 }
