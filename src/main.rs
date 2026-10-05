@@ -33,19 +33,13 @@ struct CliArgs {
 
 fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
-    let cargo_toml_path = cli_args.path.join("Cargo.toml");
 
-    ensure!(
-        cargo_toml_path.is_file(),
-        "no Cargo.toml in {}",
-        cli_args.path.display()
-    );
     ensure!(
         cli_args.overwrite || stdin().is_terminal(),
         "Runs as non-interactive — use `--overwrite` to overwrite all lint settings"
     );
 
-    install(&cli_args, &cargo_toml_path)?;
+    install(&cli_args.path, cli_args.overwrite)?;
 
     writeln!(
         stdout(),
@@ -55,16 +49,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn install(cli_args: &CliArgs, cargo_toml_path: &Path) -> Result<()> {
+fn install(path: &Path, overwrite: bool) -> Result<()> {
+    let cargo_toml_path = path.join("Cargo.toml");
+    let clippy_toml_path = path.join("clippy.toml");
+
+    ensure!(
+        cargo_toml_path.is_file(),
+        "no Cargo.toml in {}",
+        path.display()
+    );
+
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut decide = |conflict: &Conflict| resolve(conflict, cli_args.overwrite);
+    let mut decide = |conflict: &Conflict| resolve(conflict, overwrite);
 
-    let mut cargo_toml = load(cargo_toml_path)?;
+    let mut cargo_toml = load(&cargo_toml_path)?;
     merge::lints(&mut cargo_toml, &lints, &mut decide)?;
-    save(cargo_toml_path, &cargo_toml)?;
+    save(&cargo_toml_path, &cargo_toml)?;
 
-    let clippy_toml_path = cli_args.path.join("clippy.toml");
     let mut clippy_toml = load(&clippy_toml_path)?;
     merge::table(&mut clippy_toml, &clippy, Kind::ClippySetting, &mut decide)?;
     save(&clippy_toml_path, &clippy_toml)
