@@ -1,0 +1,24 @@
+# Tests may panic
+allow-expect-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-unwrap-in-tests = true
+
+# Names, from wemake-python-styleguide WPS110 and WPS111
+allowed-idents-below-min-chars = []
+min-ident-chars-threshold = 2
+disallowed-names = [
+    "arr", "bar", "baz", "content", "contents", "data", "do", "false", "foo", "ham",
+    "handle", "handler", "info", "item", "items", "no", "obj", "object", "objects", "objs", "param",
+    "params", "parameters", "result", "results", "some", "spam", "temp", "tmp", "true", "val",
+    "vals", "value", "values", "var", "variable", "vars", "wrapper",
+]
+
+# Complexity thresholds, from wemake-python-styleguide WPS2xx and WPS425
+cognitive-complexity-threshold = 12
+excessive-nesting-threshold = 4
+max-fn-params-bools = 1
+max-struct-bools = 1
+too-many-arguments-threshold = 4
+too-many-lines-threshold = 25
+type-complexity-threshold = 75
