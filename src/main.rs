@@ -7,7 +7,7 @@ use std::io::{ErrorKind, IsTerminal as _, Write as _, stdin, stdout};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, Result, ensure};
-use clap::{Args, Parser};
+use clap::Parser;
 use merge::{Conflict, Kind};
 use toml_edit::DocumentMut;
 
@@ -18,32 +18,32 @@ const CLIPPY: &str = include_str!("../preset/clippy.toml");
 #[command(name = "cargo", bin_name = "cargo")]
 enum Cargo {
     /// Install the easy-peasy-rust lint preset into a crate or workspace.
-    EasyPeasy(Install),
+    EasyPeasy(Args),
 }
 
-#[derive(Args)]
-struct Install {
+#[derive(clap::Args)]
+struct Args {
     /// Crate or workspace root.
     #[arg(default_value = ".")]
     path: PathBuf,
     /// Take the preset's value on every conflict.
     #[arg(short = 'y', long = "override")]
-    take_preset: bool,
+    overwrite: bool,
 }
 
 fn main() -> Result<()> {
-    let Cargo::EasyPeasy(install) = Cargo::parse();
-    let manifest = install.path.join("Cargo.toml");
+    let Cargo::EasyPeasy(args) = Cargo::parse();
+    let manifest = args.path.join("Cargo.toml");
     ensure!(
         manifest.is_file(),
         "no Cargo.toml in {}",
-        install.path.display()
+        args.path.display()
     );
     let lints: DocumentMut = LINTS.parse()?;
     let clippy: DocumentMut = CLIPPY.parse()?;
-    let mut decide = |conflict: &Conflict| resolve(conflict, install.take_preset);
+    let mut decide = |conflict: &Conflict| resolve(conflict, args.overwrite);
     update(&manifest, |doc| merge::lints(doc, &lints, &mut decide))?;
-    update(&install.path.join("clippy.toml"), |doc| {
+    update(&args.path.join("clippy.toml"), |doc| {
         merge::table(doc, &clippy, Kind::ClippySetting, &mut decide)
     })?;
     writeln!(
@@ -53,10 +53,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn resolve(conflict: &Conflict, take_preset: bool) -> Result<bool> {
+fn resolve(conflict: &Conflict, overwrite: bool) -> Result<bool> {
     let mut out = stdout().lock();
     writeln!(out, "{conflict}")?;
-    if take_preset {
+    if overwrite {
         writeln!(out, "Replaced yours")?;
         return Ok(true);
     }
