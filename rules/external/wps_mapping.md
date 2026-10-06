@@ -6,8 +6,8 @@ counterpart. Full lists sit next to this file, the preset's own reasoning in
 
 | Verdict | Meaning                                    | Active | Disabled |
 | ------- | ------------------------------------------ | ------ | -------- |
-| ✅      | An equivalent lint is on. Tuning is noted. | 44     | 14       |
-| ⚠️      | A lint covers part of the rule.            | 33     | 7        |
+| ✅      | An equivalent lint is on. Tuning is noted. | 43     | 14       |
+| ⚠️      | A lint covers part of the rule.            | 32     | 7        |
 | 🦀      | Not applicable to Rust.                    | 79     | 37       |
 | ❌      | No lint exists.                            | 44     | 9        |
 
@@ -158,7 +158,6 @@ Struck-through rules are disabled in WPS since 1.0, mostly left to ruff. Their i
 | WPS364 NotInWithUnaryOpViolation                       | Forbid using `not a in b` instead of `a not in b`.                      | —                                                                                                                                         | —                                                                                                                                                                                                                                      | 🦀 No `in`.                                                            |
 | WPS365 SimplifiableMatchViolation                      | Some `match` statements can be simplified to `if` statements.           | `clippy::single_match`<br>`clippy::single_match_else`                                                                                     | a `match` statement with a single nontrivial arm (i.e., where the other arm is `_ => {}`) instead of `if let`<br>a `match` statement with two arms where the second arm's pattern is a placeholder instead of a specific match pattern | ✅                                                                     |
 | WPS366 MeaninglessBooleanOperationViolation            | Forbid meaningless boolean operations.                                  | `clippy::eq_op`<br>`clippy::nonminimal_bool`<br>`clippy::overly_complex_bool_expr`                                                        | equal operands on both sides of a comparison or bitwise combination (e.g., `x == x`)<br>boolean expressions that can be written more concisely<br>boolean expressions that contain terminals which can be eliminated                   | ✅                                                                     |
-| WPS367 WrongAttributeDocstringViolation                | Disallows using `#:` comments for attribute and value docstrings.       | `missing_docs`<br>`clippy::four_forward_slashes`                                                                                          | detects missing documentation for public members<br>comments with 4 forward slashes (`////`) likely intended to be doc comments (`///`)                                                                                                | ⚠️ Private `//` "docs" pass.                                           |
 
 ## [400-499 Best practices](wps/400-499-best-practices.md)
 
@@ -248,7 +247,6 @@ Struck-through rules are disabled in WPS since 1.0, mostly left to ruff. Their i
 | WPS481 LeakingForLoopViolation                   | Found a leaking `for` loop in a class or module body.                     | —                                                                                         | —                                                                                                                                                                                                           | 🦀 Modules and impls hold only items.                                         |
 | WPS482 ForbidLazyImportViolation                 | Forbid `lazy imports`.                                                    | —                                                                                         | —                                                                                                                                                                                                           | 🦀 `use` resolves at compile time.                                            |
 | WPS483 ForbidMappingProxyTypeViolation           | `frozendict` is always better than `MappingProxyType`.                    | —                                                                                         | —                                                                                                                                                                                                           | 🦀 The borrow checker freezes the map while a view lives.                     |
-| WPS484 WrongDocStringPlacementViolation          | Forbid strings that look like docstrings, but document nothing.           | `unused_doc_comments`<br>`clippy::empty_line_after_doc_comments`                          | detects doc comments that aren't used by rustdoc<br>empty line after doc comments                                                                                                                           | ✅                                                                            |
 
 ## [500-599 Refactoring](wps/500-599-refactoring.md)
 
