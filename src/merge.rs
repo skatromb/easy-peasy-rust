@@ -6,8 +6,8 @@ use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 use crate::Choices;
 use crate::conflict::{self, Conflict, Kind};
 
-const LINTS: &str = include_str!("../preset/lints.toml");
-const SETTINGS: &str = include_str!("../preset/clippy.toml");
+const LINTS: &str = include_str!("../rules/lints.toml");
+const SETTINGS: &str = include_str!("../rules/clippy.toml");
 
 pub(crate) fn lints(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
     let is_workspace = cargo_toml.contains_key("workspace");

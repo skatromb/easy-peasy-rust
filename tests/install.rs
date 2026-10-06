@@ -8,7 +8,7 @@ use rexpect::session::spawn_command;
 use tempfile::TempDir;
 
 const BIN: &str = env!("CARGO_BIN_EXE_cargo-easy-peasy");
-const SETTINGS: &str = include_str!("../preset/clippy.toml");
+const SETTINGS: &str = include_str!("../rules/clippy.toml");
 const LIB: &str = "//! Fixture.\n";
 const VIRTUAL: &str = "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n";
 const INHERITED: &str = "\n[lints]\nworkspace = true\n";
