@@ -154,7 +154,7 @@ fn overwrites_every_conflict_with_the_flag() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("clippy::unwrap_used: yours \"allow\", preset \"deny\"\n"));
     assert!(stdout.contains("Replaced yours\n"));
-    assert!(read(&dir, "Cargo.toml").contains("unwrap_used = \"deny\"\n"));
+    assert!(read(&dir, "Cargo.toml").contains("unwrap_used = \"deny\" # Panics.\n"));
 }
 
 #[test]
@@ -175,7 +175,10 @@ fn asks_about_each_conflict() {
     assert!(second.contains("too-many-lines-threshold"));
     assert!(rest.contains("Updated clippy.toml"));
     assert!(read(&dir, "Cargo.toml").contains("unwrap_used = \"allow\"\n"));
-    assert!(read(&dir, "clippy.toml").starts_with("too-many-lines-threshold = 25\n"));
+    assert!(
+        read(&dir, "clippy.toml")
+            .starts_with("too-many-lines-threshold = 25 # Stands in for WPS213")
+    );
 }
 
 #[test]

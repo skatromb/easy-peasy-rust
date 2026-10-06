@@ -1,23 +1,23 @@
-# Tests may panic
+# Tests may panic. Shipped code may not, see "Don't panic" in lints.toml
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
 allow-panic-in-tests = true
 allow-unwrap-in-tests = true
 
-# Names, from wemake-python-styleguide WPS110 and WPS111
-allowed-idents-below-min-chars = []
-min-ident-chars-threshold = 2
+# Names, from wemake-python-styleguide WPS110 and WPS111, see external/wps_mapping.md
+allowed-idents-below-min-chars = [] # WPS111 allows none either.
 disallowed-names = [
-    "arr", "args", "bar", "baz", "content", "contents", "data", "do", "false", "foo", "ham",
-    "handle", "handler", "info", "item", "items", "no", "obj", "object", "objects", "objs", "param",
-    "params", "parameters", "result", "results", "some", "spam", "temp", "tmp", "true", "val",
-    "vals", "value", "values", "var", "variable", "vars", "wrapper",
-]
+    "arr", "args", "bar", "baz", "content", "contents", "data", "foo", "ham", "handle", "handler",
+    "info", "item", "items", "no", "obj", "object", "objects", "objs", "param", "params",
+    "parameters", "result", "results", "some", "spam", "temp", "tmp", "val", "vals", "value",
+    "values", "var", "variable", "vars", "wrapper",
+] # WPS110, rewritten for Rust.
+min-ident-chars-threshold = 2 # Stricter than WPS111: flags 2-char names like `id` too.
 
 # Complexity thresholds, from wemake-python-styleguide WPS2xx and WPS425
-cognitive-complexity-threshold = 12
-excessive-nesting-threshold = 4
-max-fn-params-bools = 0
-too-many-arguments-threshold = 4
-too-many-lines-threshold = 25
-type-complexity-threshold = 75
+cognitive-complexity-threshold = 12 # WPS231.
+excessive-nesting-threshold = 4 # WPS220 is 5.
+max-fn-params-bools = 0 # WPS425: no keyword arguments, so no bool parameters.
+too-many-arguments-threshold = 4 # WPS211 is 5. Clippy counts `self`, so methods get 3.
+too-many-lines-threshold = 25 # Stands in for WPS213, 9 expressions.
+type-complexity-threshold = 75 # Depth 3, as WPS234.

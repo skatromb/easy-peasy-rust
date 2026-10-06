@@ -1,86 +1,115 @@
 [clippy]
 # Everything on, then allow what does not fit
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-redundant_pub_crate = "allow"
-restriction = { level = "warn", priority = -1 }
-blanket_clippy_restriction_lints = "allow"
+nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
+pedantic = { level = "warn", priority = -1 } # Strict but sound.
+redundant_pub_crate = "allow" # Contradicts rustc `unreachable_pub`.
 
-# Don't panic
-arithmetic_side_effects = "deny"
-cast_abs_to_unsigned = "deny"
-expect_used = "deny"
-indexing_slicing = "deny"
-panic = "deny"
-panic_in_result_fn = "deny"
-string_slice = "deny"
-todo = "deny"
-unchecked_time_subtraction = "deny"
-unimplemented = "deny"
-unreachable = "deny"
-unwrap_used = "deny"
+blanket_clippy_restriction_lints = "allow" # `restriction` is on as a whole on purpose.
+restriction = { level = "warn", priority = -1 } # All on, then allow what does not fit, below.
 
-# Readable code: the restriction lints that fit, the rest allowed
-arbitrary_source_item_ordering = "allow"
-assertions_on_result_states = "allow"
-big_endian_bytes = "allow"
-clone_on_ref_ptr = "allow"
-default_numeric_fallback = "allow"
-exhaustive_enums = "allow"
-exhaustive_structs = "allow"
-float_arithmetic = "allow"
-impl_trait_in_params = "allow"
-implicit_return = "allow"
-inline_trait_bounds = "allow"
-integer_division_remainder_used = "allow"
-let_underscore_must_use = "allow"
-let_underscore_untyped = "allow"
-missing_docs_in_private_items = "allow"
-missing_inline_in_public_items = "allow"
-missing_trait_methods = "allow"
-mod_module_files = "deny"
-non_ascii_literal = "allow"
-pattern_type_mismatch = "allow"
-pub_use = "allow"
-pub_with_shorthand = "allow"
-question_mark_used = "allow"
-rest_pattern_accessible_field = "allow"
-self_named_module_files = "allow"
-separated_literal_suffix = "allow"
-single_call_fn = "allow"
-std_instead_of_alloc = "allow"
-std_instead_of_core = "allow"
+cargo = { level = "warn", priority = -1 } # `*` versions, odd feature names.
+cargo_common_metadata = "allow" # Fires on private crates too, unless `publish = false`.
+multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot fix.
+
+# Don't panic: shipped code returns errors. Tests may, see clippy.toml
+arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
+cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
+expect_used = "deny" # Panics.
+indexing_slicing = "deny" # Panics out of bounds. Use `get`.
+panic = "deny" # Panics.
+panic_in_result_fn = "deny" # A `Result` fn must not also panic.
+string_slice = "deny" # Panics off a `char` boundary.
+todo = "deny" # Unfinished code must not ship.
+unchecked_time_subtraction = "deny" # Panics on underflow. Use `checked_sub`.
+unimplemented = "deny" # Unfinished code must not ship.
+unreachable = "deny" # Panics.
+unwrap_used = "deny" # Panics.
+
+# Readable code: the restriction lints that do not fit
+# Pick one side: lints that contradict each other or another lint that is on
+assertions_on_result_states = "allow" # Its fix, `unwrap()`, is denied.
+big_endian_bytes = "allow" # Excludes `little_` and `host_endian_bytes`. Picks network order.
+implicit_return = "allow" # Contradicts `needless_return`.
+let_underscore_must_use = "allow" # `let _ =` is how `unused_results` wants a result dropped.
+mod_module_files = "deny" # `foo.rs` over `foo/mod.rs`.
+pub_with_shorthand = "allow" # Opposite of `pub_without_shorthand`. Picks `pub(super)`.
+self_named_module_files = "allow" # Opposite of `mod_module_files`.
+separated_literal_suffix = "allow" # Opposite of `unseparated_literal_suffix`. Picks `1_u32`.
+
+# Readable code: idiomatic Rust
+arbitrary_source_item_ordering = "allow" # Sorts by name. Code reads better top-down.
+impl_trait_in_params = "allow" # Bans `impl Trait` arguments.
+missing_trait_methods = "allow" # Defeats default methods.
+pattern_type_mismatch = "allow" # Fights match ergonomics.
+pub_use = "allow" # Re-exports shape a public API.
+question_mark_used = "allow" # Bans `?`.
+rest_pattern_accessible_field = "allow" # `..` in patterns is fine.
+single_call_fn = "allow" # Small named functions are often called once.
+
+# Readable code: noise
+clone_on_ref_ptr = "allow" # `Rc::clone(&x)` over `x.clone()`.
+default_numeric_fallback = "allow" # A suffix on every literal.
+inline_trait_bounds = "allow" # `where` for every bound.
+let_underscore_untyped = "allow" # `let _: T =` everywhere.
+missing_docs_in_private_items = "allow" # rustc `missing_docs` covers the public API.
+missing_inline_in_public_items = "allow" # Premature optimisation.
+non_ascii_literal = "allow" # Text is Unicode. `non_ascii_idents` guards names.
+
+# Readable code: niche
+exhaustive_enums = "allow" # `#[non_exhaustive]` matters for library semver only.
+exhaustive_structs = "allow" # Same.
+float_arithmetic = "allow" # Bans float math.
+integer_division_remainder_used = "allow" # For constant-time crypto.
+std_instead_of_alloc = "allow" # For `no_std`.
+std_instead_of_core = "allow" # For `no_std`.
 
 [rust]
-# rustc lints that are off by default
-ambiguous_negative_literals = "warn"
-closure_returning_async_block = "warn"
-deref_into_dyn_supertrait = "warn"
-explicit_outlives_requirements = "warn"
-ffi_unwind_calls = "warn"
-impl_trait_redundant_captures = "warn"
-let_underscore_drop = "warn"
-linker_info = "warn"
-macro_use_extern_crate = "warn"
-meta_variable_misuse = "warn"
-missing_copy_implementations = "warn"
-missing_docs = "warn"
-non_ascii_idents = "warn"
-raw_borrows_via_references = "warn"
-redundant_imports = "warn"
-redundant_lifetimes = "warn"
-single_use_lifetimes = "warn"
-trivial_casts = "warn"
-trivial_numeric_casts = "warn"
-unit_bindings = "warn"
-unnameable_types = "warn"
-unreachable_pub = "warn"
-unsafe_code = "deny"
-unstable_features = "warn"
-unused_extern_crates = "warn"
-unused_import_braces = "warn"
-unused_lifetimes = "warn"
-unused_macro_rules = "warn"
-unused_qualifications = "warn"
-unused_results = "warn"
-variant_size_differences = "warn"
+# Every stable lint allowed by default is on, except the noise at the end and edition migration
+# ones, which `cargo fix --edition` turns on
+
+# Safety
+ffi_unwind_calls = "warn" # Unwinding across FFI.
+raw_borrows_via_references = "warn" # `&raw const x` over `&x as *const _`.
+unsafe_code = "deny" # Safe Rust only.
+
+# Hidden behaviour
+ambiguous_negative_literals = "warn" # `-1.abs()` is `-(1.abs())`.
+deref_into_dyn_supertrait = "warn" # Trait upcasting shadows the `Deref`.
+let_underscore_drop = "warn" # `let _ = guard` drops it at once.
+meta_variable_misuse = "warn" # Broken macro variables.
+non_ascii_idents = "warn" # Lookalike names.
+unstable_features = "warn" # Stable Rust only.
+unused_results = "warn" # Use a result or drop it with `let _ =`.
+variant_size_differences = "warn" # One big variant bloats every value.
+
+# Public API
+missing_copy_implementations = "warn" # Small plain types should be `Copy`.
+missing_docs = "warn" # Document the public API. `deny` would break `cargo build`.
+unnameable_types = "warn" # A public type users cannot name.
+unreachable_pub = "warn" # Say `pub(crate)` when it is not exported.
+
+# Dead code
+closure_returning_async_block = "warn" # An async closure does it.
+explicit_outlives_requirements = "warn" # Inferred anyway.
+impl_trait_redundant_captures = "warn" # `use<..>` that changes nothing.
+macro_use_extern_crate = "warn" # Legacy macro import.
+redundant_imports = "warn" # Already in scope.
+redundant_lifetimes = "warn" # Equal to another lifetime.
+single_use_lifetimes = "warn" # `'_` would do.
+trivial_casts = "warn" # A cast that does nothing.
+trivial_numeric_casts = "warn" # Same, for numbers.
+unit_bindings = "warn" # `let x = ();`.
+unused_extern_crates = "warn" # Unused.
+unused_import_braces = "warn" # `use a::{b}`.
+unused_lifetimes = "warn" # Unused.
+unused_macro_rules = "warn" # Unused macro arms.
+unused_qualifications = "warn" # `a::b` where `b` is in scope.
+
+# Noise, left off as rustc has them:
+# - dead_code_pub_in_binary: a test harness is a binary, so it flags library `pub` items tests
+#   skip. Adds little: `dead_code` covers all but `pub` items in `main.rs`.
+# - deprecated_in_future: for std's own deprecations.
+# - elided_lifetimes_in_paths: `Lifetimes<'_>` everywhere.
+# - linker_info: harmless linker chatter, like `ld: ignoring duplicate libraries`.
+# - missing_debug_implementations: `Debug` on every public type.
+# - unused_crate_dependencies: flags dev-dependencies in every target that does not use them.
