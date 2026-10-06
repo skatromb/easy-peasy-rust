@@ -32,7 +32,7 @@ jobs:
           - [ ] Add the new rustc lints worth having from the [Rust changelog](https://doc.rust-lang.org/stable/releases.html)
           - [ ] Allow the new clippy lints from the diff below that do not fit
           - [ ] Mirror `rules/lints.toml` into `Cargo.toml` and bump its `version`, e.g. to `1.100.0`
-          - [ ] After merging, push the tag: `git tag v1.100.0 && git push origin v1.100.0`
+          - [ ] After merging, tag and publish: `make release`
           EOF
 
   transferred:

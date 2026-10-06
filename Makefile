@@ -1,6 +1,7 @@
-.PHONY: lint lint-python test build scrape
+.PHONY: lint lint-python test build scrape release
 
 SCRAPE := cd rules/external/scraper && uv run --locked
+VERSION = $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 
 lint: lint-python
 	cargo fmt --check
@@ -22,3 +23,7 @@ scrape:
 	$(SCRAPE) python wps.py
 	$(SCRAPE) python clippy.py
 	$(SCRAPE) python rustc.py
+
+release:
+	git tag -a v$(VERSION) -m v$(VERSION)
+	git push origin v$(VERSION)
