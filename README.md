@@ -76,10 +76,13 @@ Rust 1.99. A workspace pinned to an older toolchain still works, but that rustc 
 | WPS234 annotation complexity    | 3                     | `type-complexity-threshold`               | 75                         |
 | WPS425 positional bools         | forbidden             | `max-fn-params-bools`                     | 0, no bool parameters      |
 
-Of the 264 WPS rules, 83 have a clippy or rustc counterpart and are on. 43 are impossible in Rust
-by construction, 80 are Python-only. 50 apply in principle but have no lint yet: magic numbers,
-counts of locals, returns, methods and module items, overused expressions, `await` in a loop. Those
-would need a [dylint](https://github.com/trailofbits/dylint) library.
+Of the 200 active WPS rules, 44 have a clippy or rustc counterpart that is on, 33 one that covers
+them in part. 79 do not apply to Rust. 44 apply but have no lint yet: magic numbers, counts of
+locals, returns, methods and module items, overused expressions, `await` in a loop. Those would
+need a [dylint](https://github.com/trailofbits/dylint) library. The
+[WPS mapping](rules/external/wps_mapping.md) has the verdict for every rule. The reasoning for
+every lint and setting sits next to it in [`lints.toml`](rules/lints.toml) and
+[`clippy.toml`](rules/clippy.toml).
 
 ## License
 
