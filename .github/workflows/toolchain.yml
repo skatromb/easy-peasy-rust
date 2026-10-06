@@ -1,0 +1,88 @@
+name: Toolchain
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths: [rust-toolchain.toml]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  CARGO_TERM_COLOR: always
+  GH_TOKEN: ${{ github.token }}
+  PR: ${{ github.event.pull_request.html_url }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checklist:
+    name: Post the release checklist
+    if: github.event.action == 'opened' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on the PR
+        run: |
+          gh pr comment "$PR" --body-file - <<'EOF'
+          New Rust, new preset release:
+
+          - [ ] Add the new rustc lints worth having from the [Rust changelog](https://doc.rust-lang.org/stable/releases.html)
+          - [ ] Allow the new clippy lints from the diff below that do not fit
+          - [ ] Mirror `rules/lints.toml` into `Cargo.toml` and bump its `version`, e.g. to `1.100.0`
+          - [ ] After merging, push the tag: `git tag v1.100.0 && git push origin v1.100.0`
+          EOF
+
+  transferred:
+    name: Compare lints on transferred
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this PR
+        uses: actions/checkout@v7
+
+      - name: Check out the base branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Check out transferred
+        uses: actions/checkout@v7
+        with:
+          repository: skatromb/transferred
+          path: transferred
+
+      - name: Install the preset into transferred
+        run: |
+          rustup toolchain install
+          cargo build --release
+          target/release/cargo-easy-peasy easy-peasy transferred --drop-existing --overwrite
+
+      - name: Lint transferred with the old Rust
+        run: .github/lint-transferred.sh base/rust-toolchain.toml old_lints.txt
+
+      - name: Lint transferred with the new Rust
+        run: .github/lint-transferred.sh rust-toolchain.toml new_lints.txt
+
+      - name: Comment the difference
+        run: |
+          old_rust=$(yq '.toolchain.channel' base/rust-toolchain.toml)
+          new_rust=$(yq '.toolchain.channel' rust-toolchain.toml)
+
+          if diff -u --label "Rust $old_rust" --label "Rust $new_rust" old_lints.txt new_lints.txt > lints.diff; then
+            echo "The preset flags the same lints on transferred with Rust $old_rust and $new_rust." > comment.md
+
+          else
+            {
+              echo "Lints the preset flags on transferred:"
+              echo
+              echo "~~~diff"
+              cat lints.diff
+              echo "~~~"
+            } > comment.md
+          fi
+
+          gh pr comment "$PR" --body-file comment.md
