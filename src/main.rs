@@ -27,20 +27,29 @@ struct CliArgs {
     /// Any directory inside the crate or workspace.
     #[arg(default_value = ".")]
     path: PathBuf,
+    #[command(flatten)]
+    choices: Choices,
+}
+
+#[derive(Args, Clone, Copy)]
+struct Choices {
     /// Take the preset's value on every conflict.
     #[arg(short = 'y', long)]
     overwrite: bool,
+    /// Drop the lints the preset does not set, asking about each unless `--overwrite`.
+    #[arg(long)]
+    drop_existing: bool,
 }
 
 fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
 
     ensure!(
-        cli_args.overwrite || stdin().is_terminal(),
+        cli_args.choices.overwrite || stdin().is_terminal(),
         "Runs as non-interactive — use `--overwrite` to overwrite all lint settings"
     );
 
-    install(&cli_args.path, cli_args.overwrite)?;
+    install(&cli_args.path, cli_args.choices)?;
 
     writeln!(
         stdout(),
@@ -50,22 +59,22 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn install(path: &Path, overwrite: bool) -> Result<()> {
+fn install(path: &Path, choices: Choices) -> Result<()> {
     let workspace = Workspace::locate(path)?;
     let root = workspace.root();
     toolchain::warn_if_older(root)?;
 
     let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
-    merge::lints(cargo_toml.doc_mut(), overwrite)?;
+    merge::lints(cargo_toml.doc_mut(), choices)?;
     cargo_toml.save()?;
 
     for member in workspace.members() {
-        let mut member_toml = TomlFile::open(root, member)?;
-        merge::inherit(member_toml.doc_mut(), member, overwrite)?;
-        member_toml.save()?;
+        let mut member_cargo_toml = TomlFile::open(root, member)?;
+        merge::inherit(member_cargo_toml.doc_mut(), member, choices)?;
+        member_cargo_toml.save()?;
     }
 
     let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
-    merge::settings(clippy_toml.doc_mut(), overwrite)?;
+    merge::settings(clippy_toml.doc_mut(), choices)?;
     clippy_toml.save()
 }

@@ -119,13 +119,30 @@ fn installs_into_a_root_package() {
 }
 
 #[test]
-fn keeps_what_the_preset_does_not_set() {
+fn keeps_and_lists_lints_the_preset_does_not_set() {
     let ours = "\n[lints.clippy]\n# ours\ndbg_macro = \"allow\"\n";
     let dir = project(&format!("{}{ours}", package("solo")));
 
-    assert!(install(&dir, &["-y"]).status.success());
+    let output = install(&dir, &["-y"]);
 
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("clippy::dbg_macro: yours \"allow\", preset not set\n"));
+    assert!(stderr.contains("--drop-existing"));
     assert!(read(&dir, "Cargo.toml").contains(ours));
+}
+
+#[test]
+fn drops_lints_the_preset_does_not_set_with_the_flag() {
+    let ours = "\n[lints.rustdoc]\nbroken_intra_doc_links = \"deny\"\n";
+    let extra = "\n[lints.rust]\nelided_lifetimes_in_paths = \"warn\"\n";
+    let dir = project(&format!("{}{ours}{extra}", package("solo")));
+
+    let output = install(&dir, &["--drop-existing", "-y"]);
+
+    assert_eq!(output.stderr, b"");
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains(ours));
+    assert!(!cargo_toml.contains("elided_lifetimes_in_paths"));
 }
 
 #[test]

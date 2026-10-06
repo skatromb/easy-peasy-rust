@@ -3,33 +3,35 @@ use std::iter;
 use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
-use crate::conflict::{Conflict, Kind};
+use crate::Choices;
+use crate::conflict::{self, Conflict, Kind};
 
 const LINTS: &str = include_str!("../preset/lints.toml");
 const SETTINGS: &str = include_str!("../preset/clippy.toml");
 
-pub(crate) fn lints(cargo_toml: &mut DocumentMut, overwrite: bool) -> Result<()> {
+pub(crate) fn lints(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
     let is_workspace = cargo_toml.contains_key("workspace");
     let path: &[&str] = if is_workspace {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    tools(table_at(cargo_toml, path)?, overwrite)?;
+    let kept = tools(table_at(cargo_toml, path)?, choices)?;
+    conflict::warn_kept(&kept)?;
 
     if is_workspace && cargo_toml.contains_key("package") {
-        inherit(cargo_toml, "Cargo.toml", overwrite)?;
+        inherit(cargo_toml, "Cargo.toml", choices)?;
     }
     Ok(())
 }
 
-pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, overwrite: bool) -> Result<()> {
+pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
     let preset = Item::Table(iter::once(("workspace", value(true))).collect());
     match cargo_toml.get_mut("lints") {
         None => drop(cargo_toml.insert("lints", preset)),
         Some(current) if same(current, &preset) => {}
         Some(current) => {
-            if Conflict::new(Kind::Inheritance, name, current, &preset).resolve(overwrite)? {
+            if Conflict::new(Kind::Inheritance, name, current, &preset).resolve(choices)? {
                 *current = preset;
             }
         }
@@ -37,13 +39,14 @@ pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, overwrite: bool)
     Ok(())
 }
 
-pub(crate) fn settings(clippy_toml: &mut DocumentMut, overwrite: bool) -> Result<()> {
+pub(crate) fn settings(clippy_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
     let preset: DocumentMut = SETTINGS.parse()?;
-    table(clippy_toml, &preset, Kind::ClippySetting, overwrite)
+    table(clippy_toml, &preset, Kind::ClippySetting, choices)
 }
 
-fn tools(target: &mut Table, overwrite: bool) -> Result<()> {
+fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
     let preset: DocumentMut = LINTS.parse()?;
+    let mut kept = Vec::new();
     for (tool, lints) in preset.iter() {
         let kind = match tool {
             "clippy" => Kind::ClippyLint,
@@ -51,24 +54,49 @@ fn tools(target: &mut Table, overwrite: bool) -> Result<()> {
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
         let preset_lints = lints.as_table().context("preset tool is not a table")?;
-        table(table_at(target, &[tool])?, preset_lints, kind, overwrite)?;
+        let tool_lints = table_at(target, &[tool])?;
+        table(tool_lints, preset_lints, kind, choices)?;
+        kept.extend(existing(tool_lints, preset_lints, kind, choices)?);
     }
-    Ok(())
+    Ok(kept)
 }
 
-fn table(target: &mut Table, preset: &Table, kind: Kind, overwrite: bool) -> Result<()> {
+fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
     for (key, setting) in entries(preset) {
         match target.get_mut(key.get()) {
             None => drop(target.insert_formatted(key, setting.clone())),
             Some(current) if same(current, setting) => {}
             Some(current) => {
-                if Conflict::new(kind, key.get(), current, setting).resolve(overwrite)? {
+                if Conflict::new(kind, key.get(), current, setting).resolve(choices)? {
                     *current = setting.clone();
                 }
             }
         }
     }
     Ok(())
+}
+
+fn existing(
+    target: &mut Table,
+    preset: &Table,
+    kind: Kind,
+    choices: Choices,
+) -> Result<Vec<Conflict>> {
+    let unset: Vec<Conflict> = target
+        .iter()
+        .filter(|&(name, _)| !preset.contains_key(name))
+        .map(|(name, current)| Conflict::unset(kind, name, current))
+        .collect();
+    if !choices.drop_existing {
+        return Ok(unset);
+    }
+
+    for conflict in unset {
+        if conflict.resolve(choices)? {
+            drop(target.remove(conflict.name()));
+        }
+    }
+    Ok(Vec::new())
 }
 
 fn entries(table: &Table) -> impl Iterator<Item = (&Key, &Item)> {

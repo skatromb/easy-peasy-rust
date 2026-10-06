@@ -1,10 +1,22 @@
 use std::fmt::{self, Display, Formatter};
-use std::io::{Write as _, stdin, stdout};
+use std::io::{Write as _, stderr, stdin, stdout};
 
 use anyhow::Result;
 use toml_edit::Item;
 
-const CLIPPY_GROUPS: [&str; 3] = ["nursery", "pedantic", "restriction"];
+use crate::Choices;
+
+const CLIPPY_GROUPS: [&str; 9] = [
+    "cargo",
+    "complexity",
+    "correctness",
+    "nursery",
+    "pedantic",
+    "perf",
+    "restriction",
+    "style",
+    "suspicious",
+];
 
 #[derive(Clone, Copy)]
 pub(crate) enum Kind {
@@ -24,18 +36,29 @@ pub(crate) struct Conflict {
 impl Conflict {
     pub(crate) fn new(kind: Kind, name: &str, yours: &Item, preset: &Item) -> Self {
         Self {
-            kind,
-            name: name.to_owned(),
-            yours: undecorated(yours),
             preset: undecorated(preset),
+            ..Self::unset(kind, name, yours)
         }
     }
 
-    pub(crate) fn resolve(&self, overwrite: bool) -> Result<bool> {
+    pub(crate) fn unset(kind: Kind, name: &str, yours: &Item) -> Self {
+        Self {
+            kind,
+            name: name.to_owned(),
+            yours: undecorated(yours),
+            preset: "not set".to_owned(),
+        }
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub(crate) fn resolve(&self, choices: Choices) -> Result<bool> {
         let mut out = stdout().lock();
         writeln!(out, "{self}")?;
 
-        if overwrite {
+        if choices.overwrite {
             writeln!(out, "Replaced yours")?;
             return Ok(true);
         }
@@ -86,6 +109,26 @@ impl Display for Conflict {
         }?;
         write!(f, ": yours {yours}, preset {preset}\n  {}", self.docs())
     }
+}
+
+pub(crate) fn warn_kept(kept: &[Conflict]) -> Result<()> {
+    if kept.is_empty() {
+        return Ok(());
+    }
+
+    let mut out = stderr().lock();
+    writeln!(
+        out,
+        "warning: kept your lints that the preset does not set:"
+    )?;
+    for conflict in kept {
+        writeln!(out, "{conflict}")?;
+    }
+    writeln!(
+        out,
+        "To drop them, run `cargo easy-peasy --drop-existing [--overwrite]`"
+    )?;
+    Ok(())
 }
 
 fn undecorated(setting: &Item) -> String {

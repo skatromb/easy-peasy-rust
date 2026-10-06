@@ -28,9 +28,20 @@ Take the preset's value? [y/N]
 ```
 
 Enter keeps yours. Pass `-y` (`--overwrite`) to take the preset's value on every conflict; without a
-terminal to ask in, it is required. Keys the preset does not know about are never touched. A member
-crate with its own `[lints]` is a conflict too: keeping yours leaves that crate out of the preset.
-Re-run after upgrading to pick up new lints.
+terminal to ask in, it is required. A member crate with its own `[lints]` is a conflict too: keeping
+yours leaves that crate out of the preset. Re-run after upgrading to pick up new lints.
+
+The preset decides every lint: what it does not list stays at its default, or at its group's level.
+So a lint you set that the preset does not, like `elided_lifetimes_in_paths = "warn"` or
+`clippy::shadow_reuse = "allow"`, moves you away from it. These are kept, and listed in a warning.
+Pass `--drop-existing` to treat them as conflicts too, where taking the preset's value drops yours:
+
+```sh
+cargo easy-peasy --drop-existing [--overwrite]
+```
+
+Lints of other tools, like `[lints.rustdoc]`, and `clippy.toml` settings the preset does not set
+are never touched.
 
 Then:
 
@@ -63,7 +74,7 @@ Rust 1.99. A workspace pinned to an older toolchain still works, but that rustc 
 | WPS220 nesting                  | 5                     | `excessive-nesting-threshold`             | 4                          |
 | WPS231 cognitive complexity     | 12                    | `cognitive-complexity-threshold`          | 12                         |
 | WPS234 annotation complexity    | 3                     | `type-complexity-threshold`               | 75                         |
-| WPS425 bool arguments           | —                     | `max-fn-params-bools`, `max-struct-bools` | 1                          |
+| WPS425 bool arguments           | —                     | `max-fn-params-bools`                     | 1                          |
 
 Of the 264 WPS rules, 83 have a clippy or rustc counterpart and are on. 43 are impossible in Rust
 by construction, 80 are Python-only. 50 apply in principle but have no lint yet: magic numbers,
