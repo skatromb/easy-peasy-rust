@@ -74,7 +74,7 @@ Rust 1.99. A workspace pinned to an older toolchain still works, but that rustc 
 | WPS220 nesting                  | 5                     | `excessive-nesting-threshold`             | 4                          |
 | WPS231 cognitive complexity     | 12                    | `cognitive-complexity-threshold`          | 12                         |
 | WPS234 annotation complexity    | 3                     | `type-complexity-threshold`               | 75                         |
-| WPS425 bool arguments           | —                     | `max-fn-params-bools`                     | 1                          |
+| WPS425 positional bools         | forbidden             | `max-fn-params-bools`                     | 0, no bool parameters      |
 
 Of the 264 WPS rules, 83 have a clippy or rustc counterpart and are on. 43 are impossible in Rust
 by construction, 80 are Python-only. 50 apply in principle but have no lint yet: magic numbers,
