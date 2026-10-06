@@ -33,10 +33,10 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Take the preset's value on every conflict.
+    /// Answer yes to every question: take the preset's value on every conflict.
     #[arg(short = 'y', long)]
-    overwrite: bool,
-    /// Drop the lints the preset does not set, asking about each unless `--overwrite`.
+    yes: bool,
+    /// Drop the lints the preset does not set, asking about each unless `--yes`.
     #[arg(long)]
     drop_existing: bool,
 }
@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
 
     ensure!(
-        cli_args.choices.overwrite || stdin().is_terminal(),
-        "Runs as non-interactive — use `--overwrite` to overwrite all lint settings"
+        cli_args.choices.yes || stdin().is_terminal(),
+        "Runs as non-interactive — use `--yes` to take the preset's value on every conflict"
     );
 
     install(&cli_args.path, cli_args.choices)?;

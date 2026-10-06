@@ -58,16 +58,16 @@ impl Conflict {
         let mut out = stdout().lock();
         writeln!(out, "{self}")?;
 
-        if choices.overwrite {
+        if choices.yes {
             writeln!(out, "Replaced yours")?;
             return Ok(true);
         }
 
-        write!(out, "Take the preset's value? [y/N] ")?;
+        write!(out, "Take the preset's value? [Y/n] ")?;
         out.flush()?;
         let answer = stdin().lines().next().transpose()?.unwrap_or_default();
 
-        Ok(answer.trim().eq_ignore_ascii_case("y"))
+        Ok(!answer.trim().eq_ignore_ascii_case("n"))
     }
 
     fn docs(&self) -> String {
@@ -126,7 +126,7 @@ pub(crate) fn warn_kept(kept: &[Conflict]) -> Result<()> {
     }
     writeln!(
         out,
-        "To drop them, run `cargo easy-peasy --drop-existing [--overwrite]`"
+        "To drop them, run `cargo easy-peasy --drop-existing [--yes]`"
     )?;
     Ok(())
 }

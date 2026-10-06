@@ -66,11 +66,7 @@ fn refuses_to_run_without_a_terminal() {
     let output = install(&dir, &[]);
 
     assert!(!output.status.success());
-    assert!(
-        String::from_utf8(output.stderr)
-            .unwrap()
-            .contains("--overwrite")
-    );
+    assert!(String::from_utf8(output.stderr).unwrap().contains("--yes"));
     assert_eq!(read(&dir, "Cargo.toml"), package("solo"));
     assert!(!dir.path().join("clippy.toml").exists());
 }
@@ -146,10 +142,10 @@ fn drops_lints_the_preset_does_not_set_with_the_flag() {
 }
 
 #[test]
-fn overwrites_every_conflict_with_the_flag() {
+fn takes_the_preset_on_every_conflict_with_yes() {
     let dir = project(&format!("{}{UNWRAP_ALLOWED}", package("solo")));
 
-    let output = install(&dir, &["--overwrite"]);
+    let output = install(&dir, &["--yes"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("clippy::unwrap_used: yours \"allow\", preset \"deny\"\n"));
@@ -165,10 +161,10 @@ fn asks_about_each_conflict() {
     let _ = command.arg("easy-peasy").arg(dir.path());
 
     let mut session = spawn_command(command, Some(30_000)).unwrap();
-    let first = session.exp_string("[y/N] ").unwrap();
+    let first = session.exp_string("[Y/n] ").unwrap();
+    let _ = session.send_line("n").unwrap();
+    let second = session.exp_string("[Y/n] ").unwrap();
     let _ = session.send_line("").unwrap();
-    let second = session.exp_string("[y/N] ").unwrap();
-    let _ = session.send_line("y").unwrap();
     let rest = session.exp_eof().unwrap();
 
     assert!(first.contains("clippy::unwrap_used"));
