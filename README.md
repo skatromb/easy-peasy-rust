@@ -44,7 +44,7 @@ Per crate, at the top of `src/lib.rs` or `src/main.rs`:
 
 Cargo does not allow a member to combine `workspace = true` with its own lint keys.
 
-Per workspace: edit the values in `Cargo.toml` and `clippy.toml`. The next `cargo easy-peasy` asks about them again: answer `n` to keep them.
+Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` asks about it again: answer `n` to keep yours.
 
 ## Versioning
 
