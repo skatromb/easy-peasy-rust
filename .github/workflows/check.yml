@@ -33,6 +33,9 @@ jobs:
       - name: Install Python 3.14
         run: uv python install 3.14
 
+      - name: make dogfood
+        run: make dogfood && git diff --exit-code
+
       - name: make lint
         run: make lint
 
