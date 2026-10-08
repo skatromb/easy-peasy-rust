@@ -50,7 +50,7 @@ fn merges_into_a_hidden_clippy_toml() {
 
     assert!(install(&dir, &["-y"]).status.success());
 
-    assert!(read(&dir, ".clippy.toml").contains("too-many-lines-threshold = 25"));
+    assert!(read(&dir, ".clippy.toml").contains("too-many-lines-threshold = 20"));
     assert!(!dir.path().join("clippy.toml").exists());
 }
 

@@ -23,5 +23,5 @@ cognitive-complexity-threshold = 12 # WPS231.
 excessive-nesting-threshold = 4 # WPS220 is 5.
 max-fn-params-bools = 0 # WPS425: no keyword arguments, so no bool parameters.
 too-many-arguments-threshold = 4 # WPS211 is 5. Clippy counts `self`, so methods get 3.
-too-many-lines-threshold = 25 # Stands in for WPS213, 9 expressions.
+too-many-lines-threshold = 20 # Stands in for WPS213, 9 expressions.
 type-complexity-threshold = 75 # Depth 3, as WPS234.

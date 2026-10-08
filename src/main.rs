@@ -68,6 +68,18 @@ fn main() -> Result<()> {
 }
 
 fn install(path: &Path, choices: Choices) -> Result<()> {
+    let files = merged(path, choices)?;
+
+    if !choices.diff {
+        return files.iter().try_for_each(TomlFile::save);
+    }
+    if !files.iter().any(TomlFile::is_changed) {
+        writeln!(stdout(), "Your settings match the preset")?;
+    }
+    Ok(())
+}
+
+fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
     let root = workspace.root();
     toolchain::warn_if_older(root)?;
@@ -85,12 +97,5 @@ fn install(path: &Path, choices: Choices) -> Result<()> {
     let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
     merge::settings(clippy_toml.doc_mut(), choices)?;
     files.push(clippy_toml);
-
-    if !choices.diff {
-        return files.iter().try_for_each(TomlFile::save);
-    }
-    if !files.iter().any(TomlFile::is_changed) {
-        writeln!(stdout(), "Your settings match the preset")?;
-    }
-    Ok(())
+    Ok(files)
 }

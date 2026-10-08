@@ -27,7 +27,7 @@ fn asks_about_each_conflict() {
     assert!(second.contains("too-many-lines-threshold"));
     assert!(rest.contains("Updated clippy.toml"));
     assert!(read(&dir, "Cargo.toml").contains("unwrap_used = \"allow\"\n"));
-    assert!(read(&dir, "clippy.toml").contains("too-many-lines-threshold = 25"));
+    assert!(read(&dir, "clippy.toml").contains("too-many-lines-threshold = 20"));
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn lists_differences_without_writing_with_diff() {
     assert!(stdout.contains("clippy::unwrap_used: yours \"allow\", preset \"deny\"\n"));
     assert!(stdout.contains("clippy::dbg_macro: yours \"allow\", preset not set\n"));
     assert!(stdout.contains("clippy::panic: yours not set, preset \"deny\"\n"));
-    assert!(stdout.contains("too-many-lines-threshold: yours 50, preset 25\n"));
+    assert!(stdout.contains("too-many-lines-threshold: yours 50, preset 20\n"));
     assert_eq!(read(&dir, "Cargo.toml"), fixture("crate/Cargo.toml"));
     assert_eq!(read(&dir, "clippy.toml"), fixture("crate/clippy.toml"));
 }
@@ -62,7 +62,7 @@ fn takes_the_preset_and_keeps_your_other_lints_with_yes() {
     assert!(cargo_toml.contains("dbg_macro = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
-    assert!(clippy_toml.contains("too-many-lines-threshold = 25"));
+    assert!(clippy_toml.contains("too-many-lines-threshold = 20"));
     assert!(clippy_toml.contains("avoid-breaking-exported-api = false\n"));
     assert!(clippy_is_silent(&dir));
 }
