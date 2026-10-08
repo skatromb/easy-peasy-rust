@@ -1,4 +1,4 @@
-.PHONY: lint lint-python test build scrape release
+.PHONY: lint lint-python test build dogfood scrape release
 
 SCRAPE := cd rules/external/scraper && uv run --locked
 VERSION = $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
@@ -18,6 +18,9 @@ test:
 
 build:
 	cargo build --release
+
+dogfood:
+	cargo run --quiet -- easy-peasy --yes --drop-existing
 
 scrape:
 	$(SCRAPE) python wps.py

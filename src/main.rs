@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
 
     ensure!(
-        cli_args.choices.yes || stdin().is_terminal(),
-        "Runs as non-interactive — use `--yes` to take the preset's value on every conflict"
+        stdin().is_terminal() || cli_args.choices.yes,
+        "Use `--yes` for a non-interactive run to accept the preset's value on every conflict"
     );
 
     install(&cli_args.path, cli_args.choices)?;
@@ -76,5 +76,6 @@ fn install(path: &Path, choices: Choices) -> Result<()> {
 
     let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
     merge::settings(clippy_toml.doc_mut(), choices)?;
+
     clippy_toml.save()
 }

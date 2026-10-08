@@ -1,11 +1,14 @@
-# Tests may panic. Shipped code may not, see "Don't panic" in lints.toml
+# Tests may panic and print. Shipped code may not, see "Don't panic" in lints.toml
+allow-dbg-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
 allow-panic-in-tests = true
+allow-print-in-tests = true
 allow-unwrap-in-tests = true
 
 # Names, from wemake-python-styleguide WPS110 and WPS111, see external/wps_mapping.md
 allowed-idents-below-min-chars = [] # WPS111 allows none either.
+check-inconsistent-struct-field-initializers = true # Struct literals list fields in definition order.
 disallowed-names = [
     "arr", "args", "bar", "baz", "content", "contents", "data", "foo", "ham", "handle", "handler",
     "info", "item", "items", "no", "obj", "object", "objects", "objs", "param", "params",
@@ -13,6 +16,7 @@ disallowed-names = [
     "values", "var", "variable", "vars", "wrapper",
 ] # WPS110, rewritten for Rust.
 min-ident-chars-threshold = 2 # Stricter than WPS111: flags 2-char names like `id` too.
+upper-case-acronyms-aggressive = true # `XmlParser` over `XMLParser`, not only `Http` over `HTTP`.
 
 # Complexity thresholds, from wemake-python-styleguide WPS2xx and WPS425
 cognitive-complexity-threshold = 12 # WPS231.
