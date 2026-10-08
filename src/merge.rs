@@ -31,7 +31,9 @@ pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices
         None => drop(cargo_toml.insert("lints", preset)),
         Some(current) if same(current, &preset) => {}
         Some(current) => {
-            if Conflict::new(Kind::Inheritance, name, current, &preset).resolve(choices)? {
+            if Conflict::new(Kind::Inheritance, name, Some(current), Some(&preset))
+                .resolve(choices)?
+            {
                 *current = preset;
             }
         }
@@ -67,7 +69,7 @@ fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Re
             None => drop(target.insert_formatted(key, setting.clone())),
             Some(current) if same(current, setting) => {}
             Some(current) => {
-                if Conflict::new(kind, key.get(), current, setting).resolve(choices)? {
+                if Conflict::new(kind, key.get(), Some(current), Some(setting)).resolve(choices)? {
                     *current = setting.clone();
                 }
             }
@@ -85,7 +87,7 @@ fn existing(
     let unset: Vec<Conflict> = target
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
-        .map(|(name, current)| Conflict::unset(kind, name, current))
+        .map(|(name, current)| Conflict::new(kind, name, Some(current), None))
         .collect();
     if !choices.drop_existing {
         return Ok(unset);
