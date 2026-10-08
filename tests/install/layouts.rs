@@ -1,0 +1,67 @@
+use std::fs;
+use std::process::Command;
+
+use super::{BIN, clippy_is_silent, install, project, read};
+
+const INHERITED: &str = "\n[lints]\nworkspace = true\n";
+
+#[test]
+fn installs_into_a_virtual_workspace_from_a_member() {
+    let dir = project("workspace");
+
+    let output = Command::new(BIN)
+        .args(["easy-peasy", "-y"])
+        .current_dir(dir.path().join("crates/one"))
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
+    assert!(!cargo_toml.contains("\n[lints"));
+    for name in ["one", "two"] {
+        let member_toml = read(&dir, &format!("crates/{name}/Cargo.toml"));
+        assert!(member_toml.ends_with(INHERITED));
+        assert!(!member_toml.contains("unwrap_used"));
+    }
+    assert!(clippy_is_silent(&dir));
+}
+
+#[test]
+fn installs_into_a_root_package() {
+    let dir = project("root-package");
+
+    assert!(install(&dir, &["-y"]).status.success());
+
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
+    assert!(cargo_toml.ends_with(INHERITED));
+    assert!(clippy_is_silent(&dir));
+}
+
+#[test]
+fn merges_into_a_hidden_clippy_toml() {
+    let dir = project("crate");
+    fs::rename(
+        dir.path().join("clippy.toml"),
+        dir.path().join(".clippy.toml"),
+    )
+    .unwrap();
+
+    assert!(install(&dir, &["-y"]).status.success());
+
+    assert!(read(&dir, ".clippy.toml").contains("too-many-lines-threshold = 25"));
+    assert!(!dir.path().join("clippy.toml").exists());
+}
+
+#[test]
+fn second_run_changes_nothing() {
+    let dir = project("workspace");
+    assert!(install(&dir, &["-y"]).status.success());
+
+    let output = install(&dir, &["-y"]);
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(stdout.matches("Unchanged").count(), 4);
+    assert!(!stdout.contains("Updated"));
+}

@@ -9,6 +9,7 @@ Run it inside a workspace or a single crate, or pass the path.
 ```sh
 cargo install easy-peasy-rust
 cargo easy-peasy [path]                 # asks about each of your settings that differ
+cargo easy-peasy --diff                 # print the diff from `easy-peasy`, don't write anything
 
 # If you're applying to an existing repo with an existing config:
 cargo easy-peasy --yes                  # apply without asking

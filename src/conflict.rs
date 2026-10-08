@@ -34,19 +34,12 @@ pub(crate) struct Conflict {
 }
 
 impl Conflict {
-    pub(crate) fn new(kind: Kind, name: &str, yours: &Item, preset: &Item) -> Self {
-        Self {
-            preset: undecorated(preset),
-            ..Self::unset(kind, name, yours)
-        }
-    }
-
-    pub(crate) fn unset(kind: Kind, name: &str, yours: &Item) -> Self {
+    pub(crate) fn new(kind: Kind, name: &str, yours: Option<&Item>, preset: Option<&Item>) -> Self {
         Self {
             kind,
             name: name.to_owned(),
-            yours: undecorated(yours),
-            preset: "not set".to_owned(),
+            yours: shown(yours),
+            preset: shown(preset),
         }
     }
 
@@ -54,9 +47,18 @@ impl Conflict {
         &self.name
     }
 
+    pub(crate) fn show(&self) -> Result<()> {
+        writeln!(stdout(), "{self}")?;
+        Ok(())
+    }
+
     pub(crate) fn resolve(&self, choices: Choices) -> Result<bool> {
         let mut out = stdout().lock();
         writeln!(out, "{self}")?;
+
+        if choices.diff {
+            return Ok(true);
+        }
 
         if choices.yes {
             writeln!(out, "Replaced yours")?;
@@ -129,6 +131,10 @@ pub(crate) fn warn_kept(kept: &[Conflict]) -> Result<()> {
         "To drop them, run `cargo easy-peasy --drop-existing [--yes]`"
     )?;
     Ok(())
+}
+
+fn shown(setting: Option<&Item>) -> String {
+    setting.map_or_else(|| "not set".to_owned(), undecorated)
 }
 
 fn undecorated(setting: &Item) -> String {

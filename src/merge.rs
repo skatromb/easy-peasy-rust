@@ -28,10 +28,17 @@ pub(crate) fn lints(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()
 pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
     let preset = Item::Table(iter::once(("workspace", value(true))).collect());
     match cargo_toml.get_mut("lints") {
-        None => drop(cargo_toml.insert("lints", preset)),
+        None => {
+            if choices.diff {
+                Conflict::new(Kind::Inheritance, name, None, Some(&preset)).show()?;
+            }
+            drop(cargo_toml.insert("lints", preset));
+        }
         Some(current) if same(current, &preset) => {}
         Some(current) => {
-            if Conflict::new(Kind::Inheritance, name, current, &preset).resolve(choices)? {
+            if Conflict::new(Kind::Inheritance, name, Some(current), Some(&preset))
+                .resolve(choices)?
+            {
                 *current = preset;
             }
         }
@@ -64,10 +71,15 @@ fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
     for (key, setting) in entries(preset) {
         match target.get_mut(key.get()) {
-            None => drop(target.insert_formatted(key, setting.clone())),
+            None => {
+                if choices.diff {
+                    Conflict::new(kind, key.get(), None, Some(setting)).show()?;
+                }
+                drop(target.insert_formatted(key, setting.clone()));
+            }
             Some(current) if same(current, setting) => {}
             Some(current) => {
-                if Conflict::new(kind, key.get(), current, setting).resolve(choices)? {
+                if Conflict::new(kind, key.get(), Some(current), Some(setting)).resolve(choices)? {
                     *current = setting.clone();
                 }
             }
@@ -85,9 +97,9 @@ fn existing(
     let unset: Vec<Conflict> = target
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
-        .map(|(name, current)| Conflict::unset(kind, name, current))
+        .map(|(name, current)| Conflict::new(kind, name, Some(current), None))
         .collect();
-    if !choices.drop_existing {
+    if !(choices.drop_existing || choices.diff) {
         return Ok(unset);
     }
 

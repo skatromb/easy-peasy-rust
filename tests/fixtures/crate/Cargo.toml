@@ -1,0 +1,11 @@
+[package]
+name = "solo"
+version = "0.1.0"
+edition = "2024"
+
+[lints.clippy]
+unwrap_used = "allow"
+dbg_macro = "allow"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"

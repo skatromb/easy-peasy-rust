@@ -33,23 +33,31 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Answer yes to every question: take the preset's value on every conflict.
+    /// Silently take the preset's value on every conflict.
     #[arg(short = 'y', long)]
     yes: bool,
-    /// Drop the lints the preset does not set, asking about each unless `--yes`.
+    /// Drop the lints the preset does not set.
     #[arg(long)]
     drop_existing: bool,
+    /// Show the diff from preset, without writing rules.
+    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
+    diff: bool,
 }
 
 fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
+    let choices = cli_args.choices;
+
+    if choices.diff {
+        return install(&cli_args.path, choices);
+    }
 
     ensure!(
-        stdin().is_terminal() || cli_args.choices.yes,
+        stdin().is_terminal() || choices.yes,
         "Use `--yes` for a non-interactive run to accept the preset's value on every conflict"
     );
 
-    install(&cli_args.path, cli_args.choices)?;
+    install(&cli_args.path, choices)?;
 
     writeln!(
         stdout(),
@@ -66,16 +74,23 @@ fn install(path: &Path, choices: Choices) -> Result<()> {
 
     let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
     merge::lints(cargo_toml.doc_mut(), choices)?;
-    cargo_toml.save()?;
+    let mut files = vec![cargo_toml];
 
     for member in workspace.members() {
         let mut member_cargo_toml = TomlFile::open(root, member)?;
         merge::inherit(member_cargo_toml.doc_mut(), member, choices)?;
-        member_cargo_toml.save()?;
+        files.push(member_cargo_toml);
     }
 
     let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
     merge::settings(clippy_toml.doc_mut(), choices)?;
+    files.push(clippy_toml);
 
-    clippy_toml.save()
+    if !choices.diff {
+        return files.iter().try_for_each(TomlFile::save);
+    }
+    if !files.iter().any(TomlFile::is_changed) {
+        writeln!(stdout(), "Your settings match the preset")?;
+    }
+    Ok(())
 }
