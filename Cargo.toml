@@ -88,6 +88,7 @@ float_arithmetic = "allow" # Bans float math.
 integer_division_remainder_used = "allow" # For constant-time crypto.
 std_instead_of_alloc = "allow" # For `no_std`.
 std_instead_of_core = "allow" # For `no_std`.
+semicolon_outside_block = "allow" # Opposite of `semicolon_inside_block`. Picks `;` inside: temporaries drop at once.
 
 [lints.rust]
 # Every stable lint allowed by default is on, except the noise at the end and edition migration

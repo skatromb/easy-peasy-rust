@@ -106,7 +106,7 @@ Every lint of the clippy `restriction` group as of Rust 1.99, with its level in 
 | [`same_name_method`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#same_name_method) | warn | two method with same name |
 | [`self_named_module_files`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#self_named_module_files) | allow | checks that module layout is consistent |
 | [`semicolon_inside_block`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#semicolon_inside_block) | warn | add a semicolon inside the block |
-| [`semicolon_outside_block`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#semicolon_outside_block) | warn | add a semicolon outside the block |
+| [`semicolon_outside_block`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#semicolon_outside_block) | allow | add a semicolon outside the block |
 | [`separated_literal_suffix`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#separated_literal_suffix) | allow | literals whose suffix is separated by an underscore |
 | [`shadow_reuse`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#shadow_reuse) | warn | rebinding a name to an expression that reuses the original value, e.g., `let x = x + 1` |
 | [`shadow_same`](https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#shadow_same) | warn | rebinding a name to itself, e.g., `let mut x = &mut x` |
