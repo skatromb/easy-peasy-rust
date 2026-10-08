@@ -1,7 +1,7 @@
 use std::fs;
 use std::process::Command;
 
-use super::{BIN, clippy_is_silent, install, project, read};
+use super::{BIN, clippy_is_silent, fixture, install, project, read};
 
 const INHERITED: &str = "\n[lints]\nworkspace = true\n";
 
@@ -34,6 +34,7 @@ fn installs_into_a_root_package() {
     assert!(install(&dir, &["-y"]).status.success());
 
     let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.starts_with(&fixture("root-package/Cargo.toml")));
     assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
     assert!(cargo_toml.ends_with(INHERITED));
     assert!(clippy_is_silent(&dir));
