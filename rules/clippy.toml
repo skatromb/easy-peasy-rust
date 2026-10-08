@@ -1,3 +1,6 @@
+# Public items are linted like private ones, even where the fix breaks your API
+avoid-breaking-exported-api = false # `pub struct XMLParser` slips through otherwise.
+
 # Tests may panic and print. Shipped code may not, see "Don't panic" in lints.toml
 allow-dbg-in-tests = true
 allow-expect-in-tests = true

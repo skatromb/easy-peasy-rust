@@ -63,7 +63,7 @@ fn takes_the_preset_and_keeps_your_other_lints_with_yes() {
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
     assert!(clippy_toml.contains("too-many-lines-threshold = 20"));
-    assert!(clippy_toml.contains("avoid-breaking-exported-api = false\n"));
+    assert!(clippy_toml.contains("msrv = \"1.85\"\n"));
     assert!(clippy_is_silent(&dir));
 }
 
