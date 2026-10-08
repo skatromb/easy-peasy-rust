@@ -47,9 +47,18 @@ impl Conflict {
         &self.name
     }
 
+    pub(crate) fn show(&self) -> Result<()> {
+        writeln!(stdout(), "{self}")?;
+        Ok(())
+    }
+
     pub(crate) fn resolve(&self, choices: Choices) -> Result<bool> {
         let mut out = stdout().lock();
         writeln!(out, "{self}")?;
+
+        if choices.diff {
+            return Ok(true);
+        }
 
         if choices.yes {
             writeln!(out, "Replaced yours")?;
