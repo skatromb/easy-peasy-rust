@@ -1,8 +1,7 @@
-"""Scrape the clippy groups the preset turns on into ../clippy, with preset levels."""
+"""Scrape the clippy groups that are allowed by default into ../clippy."""
 
 import re
 import subprocess
-import tomllib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -17,7 +16,7 @@ CLONE = (
     "--depth=1",
     f"--branch={TAG}",
 )
-RULES = Path(__file__).resolve().parents[2]
+TARGET = Path(__file__).resolve().parents[1] / "clippy"
 DOCS = f"https://rust-lang.github.io/rust-clippy/{TAG}/index.html"
 DECLARATION = re.compile(
     r'pub (\w+),(?:\s*//.*)*\s*(\w+),\s*(?:r#"(.*?)"#|"((?:[^"\\]|\\[\s\S])*)")'
@@ -27,10 +26,10 @@ GROUPS = ("pedantic", "nursery", "restriction")
 Lint = tuple[str, str, str]
 HEAD = """# clippy {0}
 
-Every lint of the clippy `{0}` group as of Rust 1.99, with its level in the preset.
+Every lint of the clippy `{0}` group as of Rust 1.99. All are allowed by default.
 
-| Lint | Preset | Description |
-| --- | --- | --- |
+| Lint | Description |
+| --- | --- |
 """
 
 
@@ -49,21 +48,9 @@ def declared_lints(source: Path) -> list[Lint]:
     return sorted(map(lint_entry, declarations))
 
 
-def preset_level(preset: dict[str, object], group: str, lint: str) -> str:
-    level = preset.get(lint, preset.get(group, "allow"))
-    if isinstance(level, dict):
-        return str(level["level"])
-    return str(level)
-
-
-def lint_row(preset: dict[str, object], group: str, name: str, summary: str) -> str:
-    level = preset_level(preset, group, name)
-    return f"| [`{name}`]({DOCS}#{name}) | {level} | {summary} |\n"
-
-
-def group_file(group: str, preset: dict[str, object], lints: list[Lint]) -> str:
+def group_file(group: str, lints: list[Lint]) -> str:
     rows = [
-        lint_row(preset, group, name, summary)
+        f"| [`{name}`]({DOCS}#{name}) | {summary} |\n"
         for lint_group, name, summary in lints
         if lint_group == group
     ]
@@ -71,12 +58,10 @@ def group_file(group: str, preset: dict[str, object], lints: list[Lint]) -> str:
 
 
 def write_groups(source: Path) -> None:
-    preset = tomllib.loads((RULES / "lints.toml").read_text())["clippy"]
     lints = declared_lints(source)
-    target = RULES / "external" / "clippy"
-    target.mkdir(parents=True, exist_ok=True)
+    TARGET.mkdir(parents=True, exist_ok=True)
     for group in GROUPS:
-        (target / f"{group}.md").write_text(group_file(group, preset, lints))
+        (TARGET / f"{group}.md").write_text(group_file(group, lints))
 
 
 def main() -> None:
