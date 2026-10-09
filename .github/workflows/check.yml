@@ -46,5 +46,8 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: make test-old
-        run: make test-old
+      - name: Install Rust 1.50 and 1.74
+        run: rustup toolchain install 1.50 1.74 --profile minimal --component clippy
+
+      - name: Test on Rust 1.50 and 1.74
+        run: cargo test -- --ignored
