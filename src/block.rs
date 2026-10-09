@@ -1,4 +1,5 @@
-use std::io::{Write, stdin, stdout};
+use std::fmt::Display;
+use std::io::{Write, stderr, stdin, stdout};
 
 use anyhow::Result;
 use toml_edit::Item;
@@ -185,6 +186,11 @@ fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<
             _ => {}
         }
     }
+}
+
+pub(crate) fn warn(text: impl Display) -> Result<()> {
+    writeln!(stderr(), "warning: {text}")?;
+    Ok(())
 }
 
 pub(crate) fn shown(setting: &Item) -> String {

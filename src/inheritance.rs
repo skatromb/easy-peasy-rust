@@ -1,11 +1,10 @@
-use std::io::{Write as _, stderr};
 use std::iter;
 
 use anyhow::Result;
 use toml_edit::{Item, value};
 
 use crate::Choices;
-use crate::block::{Block, Kind, Question, shown};
+use crate::block::{Block, Kind, Question, shown, warn};
 use crate::merge::{Split, same};
 use crate::toml_file::TomlFile;
 
@@ -51,11 +50,10 @@ fn replace_own(
 fn warn_dropped(manifests: &[&mut TomlFile]) -> Result<()> {
     for manifest in manifests {
         let lints = manifest.doc().get("lints").map(shown).unwrap_or_default();
-        writeln!(
-            stderr(),
-            "warning: {} dropped its own lints: {lints}",
+        warn(format_args!(
+            "{} dropped its own lints: {lints}",
             manifest.name()
-        )?;
+        ))?;
     }
     Ok(())
 }

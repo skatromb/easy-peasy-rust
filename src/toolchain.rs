@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::io::{Write as _, stderr};
 use std::path::Path;
 use std::process::Command;
 
@@ -7,7 +6,7 @@ use anyhow::{Context as _, Result};
 use cargo_metadata::semver::Version;
 use toml_edit::{DocumentMut, Table};
 
-use crate::block::Kind;
+use crate::block::{Kind, warn};
 
 const VALIDITY: &str = include_str!("../rules/validity.toml");
 const CARGO_LINTS: Version = Version::new(1, 74, 0);
@@ -42,19 +41,17 @@ impl Toolchain {
 
     pub(crate) fn warn_skipped(&self, skipped: &[String]) -> Result<()> {
         if !self.reads_lints() {
-            writeln!(
-                stderr(),
-                "warning: skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
+            warn(format_args!(
+                "skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
                 release(&CARGO_LINTS)
-            )?;
+            ))?;
         }
         if !skipped.is_empty() {
-            writeln!(
-                stderr(),
-                "warning: skipped what Rust {} does not know yet, upgrade it and rerun to add: {}",
+            warn(format_args!(
+                "skipped what Rust {} does not know yet, upgrade it and rerun to add: {}",
                 release(&self.rust),
                 skipped.join(", ")
-            )?;
+            ))?;
         }
         Ok(())
     }
