@@ -12,8 +12,8 @@ const SETTINGS: &str = include_str!("../rules/clippy.toml");
 
 type Entry<'preset> = (&'preset Key, &'preset Item);
 type Setting<'preset> = (&'preset Key, Item);
-type Missing<'preset> = Vec<Setting<'preset>>;
-type Changed<'preset> = Vec<Setting<'preset>>;
+type Manifest<'doc> = (&'doc str, &'doc mut DocumentMut);
+type Split<T> = (Vec<T>, Vec<T>);
 
 pub(crate) fn lints(
     cargo_toml: &mut DocumentMut,
@@ -33,31 +33,53 @@ pub(crate) fn lints(
         skipped.extend(supported.retain(&mut known, tool, kind));
         table(table_at(target, &[tool])?, &known, kind, choices)?;
     }
-
-    if cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package") {
-        inherit(cargo_toml, "Cargo.toml", choices)?;
-    }
     Ok(skipped)
 }
 
-pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
+pub(crate) fn inherit<'doc>(
+    cargo_toml: &'doc mut DocumentMut,
+    members: impl Iterator<Item = Manifest<'doc>>,
+    choices: Choices,
+) -> Result<()> {
     let preset = Item::Table(iter::once(("workspace", value(true))).collect());
-    let current = cargo_toml.get("lints");
-    if current.is_some_and(|lints| same(lints, &preset)) {
-        return Ok(());
+    let root = (cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package"))
+        .then_some(("Cargo.toml", cargo_toml));
+    let (missing, changed) = not_inheriting(root.into_iter().chain(members), &preset);
+    let mut block = Block::new(Kind::Inheritance, "Apply the lints to these crates");
+
+    for (name, _) in &missing {
+        block.push_name(name);
+    }
+    if block.ask(Question::Adopt, choices)? {
+        switch(missing, &preset);
     }
 
-    let question = if current.is_some() {
-        Question::Replace
-    } else {
-        Question::Adopt
-    };
-    let mut block = Block::new(Kind::Inheritance, "Workspace lints");
-    block.push(name, current, &preset);
-    if block.ask(question, choices)? {
-        cargo_toml["lints"] = preset;
+    for (name, manifest) in &changed {
+        block.push(name, manifest.get("lints"), &preset);
+    }
+    if block.ask(Question::Replace, choices)? {
+        switch(changed, &preset);
     }
     Ok(())
+}
+
+fn switch(manifests: Vec<Manifest<'_>>, preset: &Item) {
+    for (_, manifest) in manifests {
+        manifest["lints"] = preset.clone();
+    }
+}
+
+fn not_inheriting<'doc>(
+    manifests: impl Iterator<Item = Manifest<'doc>>,
+    preset: &Item,
+) -> Split<Manifest<'doc>> {
+    manifests
+        .filter(|(_, manifest)| {
+            !manifest
+                .get("lints")
+                .is_some_and(|lints| same(lints, preset))
+        })
+        .partition(|(_, manifest)| !manifest.contains_key("lints"))
 }
 
 pub(crate) fn settings(
@@ -147,10 +169,7 @@ fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices)
     Ok(())
 }
 
-fn differing<'preset>(
-    target: &Table,
-    preset: &[Entry<'preset>],
-) -> (Missing<'preset>, Changed<'preset>) {
+fn differing<'preset>(target: &Table, preset: &[Entry<'preset>]) -> Split<Setting<'preset>> {
     preset
         .iter()
         .map(|&(key, commented)| (key, uncommented(commented)))

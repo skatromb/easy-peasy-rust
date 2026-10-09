@@ -53,6 +53,19 @@ fn matches_the_preset_after_yes_to_everything() {
 }
 
 #[test]
+fn replaces_a_workspace_members_own_lints_on_yes() {
+    let dir = project("workspace");
+
+    let questions = answer(ask(&dir, &[]), "y");
+
+    let crates = questions.iter().find(|asked| asked.contains("crates/two"));
+    assert!(crates.unwrap().contains("Replace yours? [y/N]"));
+    let member_toml = read(&dir, "crates/two/Cargo.toml");
+    assert!(member_toml.ends_with("\n[lints]\nworkspace = true\n"));
+    assert!(!member_toml.contains("unwrap_used"));
+}
+
+#[test]
 fn lists_differences_without_writing_with_diff() {
     let dir = project("crate");
 

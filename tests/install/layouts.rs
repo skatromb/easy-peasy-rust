@@ -28,6 +28,18 @@ fn installs_into_a_virtual_workspace_from_a_member() {
 }
 
 #[test]
+fn lists_every_workspace_member_in_one_block() {
+    let dir = project("workspace");
+
+    let output = install(&dir, &["--diff"]);
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(stdout.matches("Apply the lints to these crates").count(), 1);
+    assert!(stdout.contains("\n  crates/one/Cargo.toml\n"));
+    assert!(stdout.contains("\n  crates/two/Cargo.toml: { clippy = { unwrap_used = \"allow\" } } → { workspace = true }\n"));
+}
+
+#[test]
 fn installs_into_a_root_package() {
     let dir = project("root-package");
 

@@ -17,8 +17,7 @@ impl Kind {
     pub(crate) fn label(self, name: &str) -> String {
         match self {
             Self::ClippyLint => format!("clippy::{name}"),
-            Self::RustcLint | Self::ClippySetting => name.to_owned(),
-            Self::Inheritance => format!("[lints] in {name}"),
+            Self::RustcLint | Self::ClippySetting | Self::Inheritance => name.to_owned(),
         }
     }
 
