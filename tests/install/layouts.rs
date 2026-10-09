@@ -16,6 +16,8 @@ fn installs_into_a_virtual_workspace_from_a_member() {
         .unwrap();
 
     assert!(output.status.success());
+    let warning = String::from_utf8(output.stderr).unwrap();
+    assert!(warning.contains("crates/two/Cargo.toml keeps its own lints"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
     assert!(!cargo_toml.contains("\n[lints"));
@@ -28,13 +30,25 @@ fn installs_into_a_virtual_workspace_from_a_member() {
 }
 
 #[test]
+fn tells_what_a_member_dropped() {
+    let dir = project("workspace");
+
+    let output = install(&dir, &["--yes", "--drop-existing"]);
+
+    let warning = String::from_utf8(output.stderr).unwrap();
+    assert!(warning.contains(
+        "crates/two/Cargo.toml dropped its own lints: { clippy = { unwrap_used = \"allow\" } }"
+    ));
+}
+
+#[test]
 fn lists_every_workspace_member_in_one_block() {
     let dir = project("workspace");
 
     let output = install(&dir, &["--diff"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert_eq!(stdout.matches("Apply the lints to these crates").count(), 1);
+    assert_eq!(stdout.matches("Workspace lints").count(), 1);
     assert!(stdout.contains("\n  crates/one/Cargo.toml\n"));
     assert!(stdout.contains("\n  crates/two/Cargo.toml: { clippy = { unwrap_used = \"allow\" } } → { workspace = true }\n"));
 }
@@ -65,6 +79,24 @@ fn merges_into_a_hidden_clippy_toml() {
 
     assert!(read(&dir, ".clippy.toml").contains("cognitive-complexity-threshold = 12"));
     assert!(!dir.path().join("clippy.toml").exists());
+}
+
+#[test]
+fn unfolds_inline_lints() {
+    let dir = project("crate");
+    let inline = fixture("crate/Cargo.toml")
+        .replace(
+            "[lints.clippy]\nunwrap_used = \"allow\"\n",
+            "[lints]\nclippy = { unwrap_used = \"allow\" }\n",
+        )
+        .replace("float_arithmetic = \"allow\"\n", "");
+    fs::write(dir.path().join("Cargo.toml"), inline).unwrap();
+
+    assert!(install(&dir, &["-y"]).status.success());
+
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("\n[lints.clippy]\n# Nursery and pedantic\n"));
+    assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
 }
 
 #[test]

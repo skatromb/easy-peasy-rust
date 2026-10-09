@@ -1,10 +1,11 @@
-use std::iter;
+use std::io::{Write as _, stderr};
+use std::{iter, mem};
 
 use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
-use crate::block::{Block, Kind, Question};
+use crate::block::{Block, Kind, Question, shown};
 use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
@@ -45,7 +46,7 @@ pub(crate) fn inherit<'doc>(
     let root = (cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package"))
         .then_some(("Cargo.toml", cargo_toml));
     let (missing, changed) = not_inheriting(root.into_iter().chain(members), &preset);
-    let mut block = Block::new(Kind::Inheritance, "Apply the lints to these crates");
+    let mut block = Block::new(Kind::Inheritance, "Workspace lints");
 
     for (name, _) in &missing {
         block.push_name(name);
@@ -53,12 +54,39 @@ pub(crate) fn inherit<'doc>(
     if block.ask(Question::Adopt, choices)? {
         switch(missing, &preset);
     }
+    replace_own(&mut block, changed, &preset, choices)
+}
 
+fn replace_own(
+    block: &mut Block,
+    changed: Vec<Manifest<'_>>,
+    preset: &Item,
+    choices: Choices,
+) -> Result<()> {
     for (name, manifest) in &changed {
-        block.push(name, manifest.get("lints"), &preset);
+        block.push(name, manifest.get("lints"), preset);
     }
-    if block.ask(Question::Replace, choices)? {
-        switch(changed, &preset);
+    if !block.ask(Question::Replace, choices)? {
+        return warn_kept(&changed);
+    }
+    if !choices.diff {
+        warn_dropped(&changed)?;
+    }
+    switch(changed, preset);
+    Ok(())
+}
+
+fn warn_kept(manifests: &[Manifest<'_>]) -> Result<()> {
+    for (name, _) in manifests {
+        writeln!(stderr(), "warning: {name} keeps its own lints")?;
+    }
+    Ok(())
+}
+
+fn warn_dropped(manifests: &[Manifest<'_>]) -> Result<()> {
+    for (name, manifest) in manifests {
+        let lints = manifest.get("lints").map(shown).unwrap_or_default();
+        writeln!(stderr(), "warning: {name} dropped its own lints: {lints}")?;
     }
     Ok(())
 }
@@ -106,7 +134,7 @@ pub(crate) fn extras(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<(
 }
 
 fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> Result<()> {
-    let title = format!("You have {tool} lints that are not in `easy-peasy-rust`");
+    let title = format!("Your {tool} lints not in `easy-peasy-rust`");
     let mut block = Block::new(kind(tool)?, &title);
     for (name, _) in target
         .iter()
@@ -237,12 +265,30 @@ fn uncommented(setting: &Item) -> Item {
 
 fn table_at<'doc>(root: &'doc mut Table, path: &[&str]) -> Result<&'doc mut Table> {
     path.iter().try_fold(root, |parent, name| {
+        unfold(parent, name);
         parent
             .entry(name)
             .or_insert_with(implicit_table)
             .as_table_mut()
             .with_context(|| format!("`{name}` in Cargo.toml is not a table"))
     })
+}
+
+fn unfold(parent: &mut Table, name: &str) {
+    let Some(folded) = parent.get_mut(name) else {
+        return;
+    };
+    if !folded.is_inline_table() && !folded.as_table().is_some_and(Table::is_dotted) {
+        return;
+    }
+    if let Ok(mut table) = mem::take(folded).into_table() {
+        table.set_dotted(false);
+        *folded = Item::Table(table);
+    }
+    parent.set_implicit(true);
+    if let Some(mut key) = parent.key_mut(name) {
+        key.leaf_decor_mut().clear();
+    }
 }
 
 fn implicit_table() -> Item {

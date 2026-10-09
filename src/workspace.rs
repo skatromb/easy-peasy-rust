@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context as _, Result, ensure};
 use cargo_metadata::MetadataCommand;
 
+use crate::toml_file::TomlFile;
+
 pub(crate) struct Workspace {
     root: PathBuf,
     members: Vec<String>,
@@ -38,15 +40,23 @@ impl Workspace {
         &self.root
     }
 
-    pub(crate) fn members(&self) -> &[String] {
-        &self.members
+    pub(crate) fn cargo_toml(&self) -> Result<TomlFile> {
+        TomlFile::open(&self.root, "Cargo.toml")
     }
 
-    pub(crate) fn clippy_toml(&self) -> &'static str {
-        if self.root.join(".clippy.toml").is_file() {
+    pub(crate) fn members(&self) -> Result<Vec<TomlFile>> {
+        self.members
+            .iter()
+            .map(|member| TomlFile::open(&self.root, member))
+            .collect()
+    }
+
+    pub(crate) fn clippy_toml(&self) -> Result<TomlFile> {
+        let name = if self.root.join(".clippy.toml").is_file() {
             ".clippy.toml"
         } else {
             "clippy.toml"
-        }
+        };
+        TomlFile::open(&self.root, name)
     }
 }

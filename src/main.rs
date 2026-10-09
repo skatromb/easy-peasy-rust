@@ -38,8 +38,11 @@ struct Choices {
     /// Add what the preset sets and you lack, without asking. Keeps your own settings.
     #[arg(short = 'y', long)]
     yes: bool,
+    /// Default to replacing and removing your own settings. With `--yes`, applies the whole preset.
+    #[arg(long)]
+    drop_existing: bool,
     /// Print the diff from the preset, without writing anything.
-    #[arg(long, conflicts_with = "yes")]
+    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
     diff: bool,
 }
 
@@ -47,51 +50,52 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
     let choices = cli_args.choices;
 
-    if choices.diff {
-        return install(&cli_args.path, choices);
+    ensure!(
+        choices.diff || choices.yes || stdin().is_terminal(),
+        "Use `--yes` for a non-interactive run, or `--diff` to only look"
+    );
+    if !choices.diff && !choices.yes {
+        writeln!(
+            stdout(),
+            "Press Enter for the default answer, or rerun with `--yes` to take all defaults without asking.\n"
+        )?;
     }
 
-    ensure!(
-        stdin().is_terminal() || choices.yes,
-        "Use `--yes` for a non-interactive run"
-    );
+    let files = merged(&cli_args.path, choices)?;
+    if choices.diff {
+        return report(&files);
+    }
+    save(&files)
+}
 
-    install(&cli_args.path, choices)?;
+fn report(files: &[TomlFile]) -> Result<()> {
+    if !files.iter().any(TomlFile::is_changed) {
+        writeln!(stdout(), "Your settings match the preset")?;
+    }
+    Ok(())
+}
+
+fn save(files: &[TomlFile]) -> Result<()> {
+    files.iter().try_for_each(TomlFile::save)?;
     writeln!(
         stdout(),
         "Run `cargo clippy --workspace --all-targets` to see what it flags."
     )?;
-
-    Ok(())
-}
-
-fn install(path: &Path, choices: Choices) -> Result<()> {
-    let files = merged(path, choices)?;
-
-    if !choices.diff {
-        return files.iter().try_for_each(TomlFile::save);
-    }
-
-    if !files.iter().any(TomlFile::is_changed) {
-        writeln!(stdout(), "Your settings match the preset")?;
-    }
-
     Ok(())
 }
 
 fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
-    let root = workspace.root();
-    let rust = toolchain::rust_release(root)?;
+    let rust = toolchain::rust_release(workspace.root())?;
     let supported = Supported::new(&rust)?;
-    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
+    let mut clippy_toml = workspace.clippy_toml()?;
     let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &supported)?;
     let mut files = vec![clippy_toml];
 
     if toolchain::reads_lints(&rust)? {
-        let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
+        let mut cargo_toml = workspace.cargo_toml()?;
         skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
-        let mut members = members(&workspace)?;
+        let mut members = workspace.members()?;
         let manifests = members.iter_mut().map(TomlFile::manifest);
         merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
         merge::extras(cargo_toml.doc_mut(), choices)?;
@@ -103,12 +107,4 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     toolchain::warn_skipped(&rust, &skipped)?;
 
     Ok(files)
-}
-
-fn members(workspace: &Workspace) -> Result<Vec<TomlFile>> {
-    workspace
-        .members()
-        .iter()
-        .map(|member| TomlFile::open(workspace.root(), member))
-        .collect()
 }
