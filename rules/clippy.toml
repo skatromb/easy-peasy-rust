@@ -37,8 +37,8 @@ type-complexity-threshold = 75 # Depth 3, as WPS234.
 # - allow-comparison-to-zero = true: `x % 2 == 0` holds for negative `x` too.
 # - allow-exact-repetitions = true: `config::Config` is idiomatic.
 # - allow-expect-in-consts = true: a panic there fails the build, not the run.
-# - allow-unwrap-in-consts = true: a panic there fails the build, not the run.
 # - allow-renamed-params-for = ["core::convert::From", "core::convert::TryFrom", "core::str::FromStr"]: `From` impls may rename `value`, a disallowed name.
+# - allow-unwrap-in-consts = true: a panic there fails the build, not the run.
 # - allow-unwrap-types = []: `lock().unwrap_or_else(PoisonError::into_inner)` does not panic.
 # - allowed-prefixes = ["to", "as", "into", "from", "try_into", "try_from"]: `to_config` in `config` reads fine.
 # - allowed-scripts = ["Latin"]: as WPS119.
