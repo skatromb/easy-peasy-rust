@@ -112,9 +112,11 @@ fn adds_the_preset_and_keeps_yours_by_default() {
     assert!(stdout.contains("\n  Kept No panics: clippy::unwrap_used\n"));
     assert!(stdout.contains("\n  Kept Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     let cargo_toml = read(&dir, "Cargo.toml");
-    assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
-    assert!(cargo_toml.contains("\n\n# No panics\narithmetic_side_effects = \"deny\"\n"));
-    assert!(cargo_toml.contains("float_arithmetic = \"allow\"\n"));
+    assert!(cargo_toml.contains("\nunwrap_in_result = \"warn\"\nunwrap_used = \"allow\"\n"));
+    assert!(
+        cargo_toml.contains("\n\n# easy-peasy: No panics\narithmetic_side_effects = \"deny\"\n")
+    );
+    assert!(cargo_toml.contains("\n\n# easy-peasy: yours\nfloat_arithmetic = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
     assert!(clippy_toml.contains("too-many-lines-threshold = 50"));

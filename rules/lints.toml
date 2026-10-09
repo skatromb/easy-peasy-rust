@@ -1,10 +1,10 @@
 [rust]
-# Safety
+# easy-peasy: Safety
 ffi_unwind_calls = "warn" # Unwinding across FFI.
 raw_borrows_via_references = "warn" # `&raw const x` over `&x as *const _`.
 unsafe_code = "deny" # Safe Rust only.
 
-# Hidden behaviour
+# easy-peasy: Hidden behaviour
 ambiguous_negative_literals = "warn" # `-1.abs()` is `-(1.abs())`.
 deref_into_dyn_supertrait = "warn" # Trait upcasting shadows the `Deref`.
 let_underscore_drop = "warn" # `let _ = guard` drops it at once.
@@ -14,13 +14,13 @@ unstable_features = "warn" # Stable Rust only.
 unused_results = "warn" # Use a result or drop it with `let _ =`.
 variant_size_differences = "warn" # One big variant bloats every value.
 
-# Public API
+# easy-peasy: Public API
 missing_copy_implementations = "warn" # Small plain types should be `Copy`.
 missing_docs = "warn" # Document the public API. `deny` would break `cargo build`.
 unnameable_types = "warn" # A public type users cannot name.
 unreachable_pub = "warn" # Say `pub(crate)` when it is not exported.
 
-# Dead code
+# easy-peasy: Dead code
 closure_returning_async_block = "warn" # An async closure does it.
 explicit_outlives_requirements = "warn" # Inferred anyway.
 impl_trait_redundant_captures = "warn" # `use<..>` that changes nothing.
@@ -46,17 +46,17 @@ unused_qualifications = "warn" # `a::b` where `b` is in scope.
 # - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.
 
 [clippy]
-# Nursery and pedantic
+# easy-peasy: Nursery and pedantic
 nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
 pedantic = { level = "warn", priority = -1 } # Strict but sound.
 redundant_pub_crate = "allow" # Contradicts rustc `unreachable_pub`.
 
-# Cargo
+# easy-peasy: Cargo
 cargo = { level = "warn", priority = -1 } # `*` versions, odd feature names.
 cargo_common_metadata = "allow" # Fires on private crates too, unless `publish = false`.
 multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot fix.
 
-# No panics
+# easy-peasy: No panics
 arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
 cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
 exit = "warn" # Skips destructors. Return from `main`.
@@ -73,7 +73,7 @@ unreachable = "deny" # Panics.
 unwrap_in_result = "warn" # A `Result` fn returns its errors.
 unwrap_used = "deny" # Panics.
 
-# Explicit numbers and casts
+# easy-peasy: Explicit numbers and casts
 as_conversions = "warn" # `as` truncates silently. Use `From` or `TryFrom`.
 as_pointer_underscore = "warn" # Name the pointer type.
 as_underscore = "warn" # Name the target type.
@@ -89,7 +89,7 @@ non_zero_suggestions = "warn" # `NonZero::from` over a checked conversion.
 precedence_bits = "warn" # Parenthesize shifts mixed with masks.
 suspicious_xor_used_as_pow = "warn" # `2 ^ 8` is XOR, not power.
 
-# Documented unsafe
+# easy-peasy: Documented unsafe
 default_union_representation = "warn" # A union without `#[repr(C)]` has no defined layout.
 inline_asm_x86_att_syntax = "warn" # Intel syntax, the `asm!` default.
 mem_forget = "warn" # Leaks what `Drop` would free.
@@ -98,19 +98,19 @@ undocumented_unsafe_blocks = "warn" # Every `unsafe` block says why it is sound.
 unnecessary_safety_comment = "warn" # No `SAFETY:` on safe code.
 unnecessary_safety_doc = "warn" # No `# Safety` docs on safe functions.
 
-# No debug output
+# easy-peasy: No debug output
 dbg_macro = "warn" # Debugging leftover.
 pointer_format = "warn" # Addresses differ per run.
 print_stderr = "warn" # Return the error or log it.
 print_stdout = "warn" # Write to a handle, like `stdout().lock()`.
 use_debug = "warn" # `{:?}` is for developers, not users.
 
-# Handled errors
+# easy-peasy: Handled errors
 map_err_ignore = "warn" # Keep the source error.
 try_err = "warn" # `return Err(e)` over `Err(e)?`.
 unused_result_ok = "warn" # `.ok()` hides a dropped `Result`. Use `let _ =`.
 
-# Naming
+# easy-peasy: Naming
 disallowed_script_idents = "warn" # Latin names only, see clippy.toml.
 error_impl_error = "warn" # A public `Error` type clashes with `std::error::Error`.
 min_ident_chars = "warn" # WPS111. Threshold in clippy.toml.
@@ -123,7 +123,7 @@ shadow_same = "warn" # Same.
 shadow_unrelated = "warn" # Same.
 single_char_lifetime_names = "warn" # `'input` over `'a`.
 
-# Modules and imports
+# easy-peasy: Modules and imports
 absolute_paths = "warn" # `use` it, then call it by its short name.
 alloc_instead_of_core = "warn" # `core` over `alloc` for what it has.
 cfg_not_test = "warn" # Tests run the shipped code.
@@ -138,7 +138,7 @@ tests_outside_test_module = "warn" # Tests live in a `tests` module.
 unnecessary_self_imports = "warn" # `use a::b` over `use a::b::{self}`.
 unused_trait_names = "warn" # `use Trait as _` when only its methods are used.
 
-# Explicit control flow and patterns
+# easy-peasy: Explicit control flow and patterns
 cognitive_complexity = "warn" # WPS231. Threshold in clippy.toml.
 else_if_without_else = "warn" # The last case is handled explicitly.
 infinite_loop = "warn" # A `loop` that never breaks returns `!`.
@@ -149,7 +149,7 @@ unnecessary_rest_pattern = "warn" # Same.
 unneeded_field_pattern = "warn" # `..` over `field: _`.
 wildcard_enum_match_arm = "warn" # A new variant must break the match.
 
-# Idiomatic std
+# easy-peasy: Idiomatic std
 create_dir = "warn" # `create_dir_all` makes the parents too.
 deref_by_slicing = "warn" # `&*v` over `&v[..]`.
 filetype_is_file = "warn" # `!is_dir()` also covers symlinks and devices.
@@ -168,7 +168,7 @@ string_add = "warn" # `push_str` over `+`.
 string_lit_chars_any = "warn" # `matches!` over `"abc".chars().any(..)`.
 verbose_file_reads = "warn" # `fs::read_to_string` over opening and reading.
 
-# Consistent style
+# easy-peasy: Consistent style
 allow_attributes = "warn" # `#[expect]` over `#[allow]`: it says when the lint stops firing.
 allow_attributes_without_reason = "warn" # Every `#[expect]` says why.
 doc_include_without_cfg = "warn" # `#[cfg_attr(doc, doc = include_str!(..))]` keeps it out of the binary.

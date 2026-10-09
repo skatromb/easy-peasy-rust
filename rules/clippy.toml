@@ -1,7 +1,7 @@
-# Public API
+# easy-peasy: Public API
 avoid-breaking-exported-api = false # ~20 lints that may ask to break a `pub` API.
 
-# Tests may panic and print, shipped code can't
+# easy-peasy: Tests may panic and print, shipped code can't
 allow-dbg-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
@@ -9,7 +9,7 @@ allow-panic-in-tests = true
 allow-print-in-tests = true
 allow-unwrap-in-tests = true
 
-# Naming
+# easy-peasy: Naming
 allowed-idents-below-min-chars = [] # WPS111 allows none either.
 check-inconsistent-struct-field-initializers = true # Struct literals list fields in definition order.
 disallowed-names = [
@@ -21,7 +21,7 @@ disallowed-names = [
 min-ident-chars-threshold = 2 # Stricter than WPS111: flags 2-char names like `id` too.
 upper-case-acronyms-aggressive = true # `XmlParser` over `XMLParser`, `Http` over `HTTP`.
 
-# Complexity
+# easy-peasy: Complexity
 cognitive-complexity-threshold = 12 # WPS231.
 excessive-nesting-threshold = 4 # WPS220 is 5.
 max-fn-params-bools = 0 # WPS425: no keyword arguments, so no bool parameters.

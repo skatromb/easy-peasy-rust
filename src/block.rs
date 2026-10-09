@@ -35,6 +35,15 @@ impl Kind {
         }
     }
 
+    const fn what(self) -> &'static str {
+        match self {
+            Self::ClippyLint => "clippy lints",
+            Self::RustcLint => "rust lints",
+            Self::ClippySetting => "settings",
+            Self::Inheritance => "crates",
+        }
+    }
+
     fn count(self, number: usize) -> String {
         let noun = match self {
             Self::ClippyLint | Self::RustcLint => "lint",
@@ -176,6 +185,16 @@ pub(crate) fn section<T>(
     }
     writeln!(stdout())?;
     Ok(merged)
+}
+
+pub(crate) fn rearranged(kind: Kind) -> Result<()> {
+    QUIET.store(false, Ordering::Relaxed);
+    writeln!(
+        stdout(),
+        "  Rearranged {} to the preset's layout",
+        kind.what()
+    )?;
+    Ok(())
 }
 
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
