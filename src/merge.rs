@@ -1,7 +1,7 @@
 use std::iter;
 
 use anyhow::{Context as _, Result, bail};
-use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
+use toml_edit::{DocumentMut, Item, Table, Value, value};
 
 use crate::Choices;
 use crate::conflict::{self, Conflict, Kind};
@@ -69,23 +69,32 @@ fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    for (key, setting) in entries(preset) {
-        match target.get_mut(key.get()) {
+    for (key, commented) in preset {
+        let setting = uncommented(commented);
+        match target.get_mut(key) {
             None => {
                 if choices.diff {
-                    Conflict::new(kind, key.get(), None, Some(setting)).show()?;
+                    Conflict::new(kind, key, None, Some(&setting)).show()?;
                 }
-                drop(target.insert_formatted(key, setting.clone()));
+                drop(target.insert(key, setting));
             }
-            Some(current) if same(current, setting) => {}
+            Some(current) if same(current, &setting) => {}
             Some(current) => {
-                if Conflict::new(kind, key.get(), Some(current), Some(setting)).resolve(choices)? {
-                    *current = setting.clone();
+                if Conflict::new(kind, key, Some(current), Some(&setting)).resolve(choices)? {
+                    *current = setting;
                 }
             }
         }
     }
     Ok(())
+}
+
+fn uncommented(setting: &Item) -> Item {
+    let mut bare = setting.clone();
+    if let Some(plain) = bare.as_value_mut() {
+        plain.decor_mut().clear();
+    }
+    bare
 }
 
 fn existing(
@@ -109,12 +118,6 @@ fn existing(
         }
     }
     Ok(Vec::new())
-}
-
-fn entries(table: &Table) -> impl Iterator<Item = (&Key, &Item)> {
-    table
-        .iter()
-        .filter_map(|(name, _)| table.get_key_value(name))
 }
 
 fn table_at<'doc>(root: &'doc mut Table, path: &[&str]) -> Result<&'doc mut Table> {
