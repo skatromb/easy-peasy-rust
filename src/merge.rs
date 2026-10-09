@@ -13,7 +13,7 @@ const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
 const TOOLS: [Kind; 2] = [Kind::RustcLint, Kind::ClippyLint];
 
-type Entry<'preset> = (&'preset Key, &'preset Item);
+type Rule<'preset> = (&'preset Key, &'preset Item);
 type Setting<'preset> = (&'preset Key, Item);
 type Split<T> = (Vec<T>, Vec<T>);
 
@@ -156,16 +156,16 @@ fn lints_path(cargo_toml: &DocumentMut) -> &'static [&'static str] {
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    let entries: Vec<_> = entries(preset).collect();
+    let rules: Vec<_> = keyed(preset).collect();
     let existing = target.iter().map(|(name, _)| name.to_owned()).collect();
-    entries
+    rules
         .chunk_by(|_, &(key, _)| header(key).is_none())
         .try_for_each(|block| adopt(target, block, kind, choices))?;
-    arrange(target, &entries, existing);
+    arrange(target, &rules, existing);
     Ok(())
 }
 
-fn arrange(target: &mut Table, preset: &[Entry<'_>], mut order: Vec<String>) {
+fn arrange(target: &mut Table, preset: &[Rule<'_>], mut order: Vec<String>) {
     for (index, &(key, _)) in preset.iter().enumerate() {
         let name = key.get();
         if target.contains_key(name) && !order.iter().any(|known| known == name) {
@@ -194,7 +194,7 @@ fn hand_over_header(target: &mut Table, key: &Key, next: &str) {
     }
 }
 
-fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices) -> Result<()> {
+fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) -> Result<()> {
     let title = preset.first().and_then(|&(key, _)| header(key));
     let mut block = Block::new(kind, title.unwrap_or_default());
     let (missing, changed) = differing(target, preset);
@@ -219,7 +219,7 @@ fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices)
     Ok(())
 }
 
-fn differing<'preset>(target: &Table, preset: &[Entry<'preset>]) -> Split<Setting<'preset>> {
+fn differing<'preset>(target: &Table, preset: &[Rule<'preset>]) -> Split<Setting<'preset>> {
     preset
         .iter()
         .map(|&(key, commented)| (key, uncommented(commented)))
@@ -239,7 +239,7 @@ fn header(key: &Key) -> Option<&str> {
         .find_map(|line| line.strip_prefix("# "))
 }
 
-fn entries(table: &Table) -> impl Iterator<Item = Entry<'_>> {
+fn keyed(table: &Table) -> impl Iterator<Item = Rule<'_>> {
     table
         .iter()
         .filter_map(|(name, _)| table.get_key_value(name))
