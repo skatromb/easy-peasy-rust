@@ -51,8 +51,7 @@ unimplemented = "deny"
 unreachable = "deny"
 unwrap_used = "deny"
 
-# Readable code: the restriction lints that do not fit
-# Pick one side: lints that contradict each other or another lint that is on
+# Readable code: pick one side of lints that contradict each other or another lint that is on
 assertions_on_result_states = "allow"
 big_endian_bytes = "allow"
 implicit_return = "allow"
@@ -91,8 +90,6 @@ std_instead_of_alloc = "allow"
 std_instead_of_core = "allow"
 
 [lints.rust]
-# Every stable allowed-by-default lint, except noise and edition migrations (`cargo fix --edition`)
-
 # Safety
 ffi_unwind_calls = "warn"
 raw_borrows_via_references = "warn"
