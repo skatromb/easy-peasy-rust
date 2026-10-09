@@ -91,7 +91,7 @@ impl Question {
 
 struct Change {
     label: String,
-    detail: Option<String>,
+    detail: String,
 }
 
 pub(crate) struct Block {
@@ -111,22 +111,11 @@ impl Block {
         }
     }
 
-    pub(crate) fn push_setting(&mut self, name: &str, yours: Option<&Item>, preset: &Item) {
-        let wanted = shown(preset);
-        let detail = yours.map_or_else(
-            || wanted.clone(),
-            |mine| format!("{} → {wanted}", shown(mine)),
-        );
+    pub(crate) fn push(&mut self, name: &str, yours: Option<&Item>, preset: Option<&Item>) {
+        let sides: Vec<String> = [yours, preset].into_iter().flatten().map(shown).collect();
         self.changes.push(Change {
             label: self.kind.label(name),
-            detail: Some(detail),
-        });
-    }
-
-    pub(crate) fn push(&mut self, name: &str) {
-        self.changes.push(Change {
-            label: self.kind.label(name),
-            detail: None,
+            detail: sides.join(" → "),
         });
     }
 
@@ -144,10 +133,7 @@ impl Block {
             self.shown = true;
         }
         for Change { label, detail } in self.changes.drain(..) {
-            match detail {
-                Some(text) => writeln!(out, "  {label}: {text}")?,
-                None => writeln!(out, "  {label}")?,
-            }
+            writeln!(out, "  {label}: {detail}")?;
         }
 
         let answer = choices.diff || answer(&mut out, question, choices)?;

@@ -54,11 +54,11 @@ pub(crate) fn lints(
 fn remove(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
     let title = format!("Your {} lints not in `easy-peasy-rust`", kind.section());
     let mut block = Block::new(kind, &title);
-    for (name, _) in target
+    for (name, yours) in target
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
     {
-        block.push(name);
+        block.push(name, Some(yours), None);
     }
 
     if block.ask(Question::Remove, choices)? {
@@ -83,7 +83,7 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     let (missing, changed) = differing(target, preset);
 
     for (key, setting) in &missing {
-        block.push_setting(key.get(), None, setting);
+        block.push(key.get(), None, Some(setting));
     }
     if block.ask(Question::Adopt, choices)? {
         for (key, setting) in missing {
@@ -92,7 +92,7 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     }
 
     for (key, setting) in &changed {
-        block.push_setting(key.get(), target.get(key.get()), setting);
+        block.push(key.get(), target.get(key.get()), Some(setting));
     }
     if block.ask(Question::Replace, choices)? {
         for (key, setting) in changed {

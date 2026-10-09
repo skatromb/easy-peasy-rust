@@ -91,7 +91,7 @@ fn lists_differences_without_writing_with_diff() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("  clippy::unwrap_used: \"allow\" → \"deny\"\n"));
     assert!(stdout.contains("  clippy::panic: \"deny\"\n"));
-    assert!(stdout.contains("  clippy::float_arithmetic\n"));
+    assert!(stdout.contains("  clippy::float_arithmetic: \"allow\"\n"));
     assert!(stdout.contains("  too-many-lines-threshold: 50 → 20\n"));
     assert!(!stdout.contains("[Y/n]"));
     assert_eq!(read(&dir, "Cargo.toml"), fixture("crate/Cargo.toml"));
