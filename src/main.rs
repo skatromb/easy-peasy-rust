@@ -2,7 +2,6 @@
 
 mod block;
 mod merge;
-mod supported;
 mod toml_file;
 mod toolchain;
 mod workspace;
@@ -12,8 +11,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Result, ensure};
 use clap::{Args, Parser};
-use supported::Supported;
 use toml_file::TomlFile;
+use toolchain::Toolchain;
 use workspace::Workspace;
 
 #[derive(Parser)]
@@ -86,15 +85,14 @@ fn save(files: &[TomlFile]) -> Result<()> {
 
 fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
-    let rust = toolchain::rust_release(workspace.root())?;
-    let supported = Supported::new(&rust)?;
+    let toolchain = Toolchain::detect(workspace.root())?;
     let mut clippy_toml = workspace.clippy_toml()?;
-    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &supported)?;
+    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &toolchain)?;
     let mut files = vec![clippy_toml];
 
-    if toolchain::reads_lints(&rust)? {
+    if toolchain.reads_lints() {
         let mut cargo_toml = workspace.cargo_toml()?;
-        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
+        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &toolchain)?);
         let mut members = workspace.members()?;
         let manifests = members.iter_mut().map(TomlFile::manifest);
         merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
@@ -103,7 +101,7 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     }
 
     skipped.sort();
-    toolchain::warn_skipped(&rust, &skipped)?;
+    toolchain.warn_skipped(&skipped)?;
 
     Ok(files)
 }

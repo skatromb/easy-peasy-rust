@@ -6,7 +6,7 @@ use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
 use crate::block::{Block, Kind, Question, shown};
-use crate::supported::Supported;
+use crate::toolchain::Toolchain;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
@@ -20,7 +20,7 @@ type Split<T> = (Vec<T>, Vec<T>);
 pub(crate) fn lints(
     cargo_toml: &mut DocumentMut,
     choices: Choices,
-    supported: &Supported,
+    toolchain: &Toolchain,
 ) -> Result<Vec<String>> {
     let preset: DocumentMut = LINTS.parse()?;
     let path = lints_path(cargo_toml);
@@ -33,7 +33,7 @@ pub(crate) fn lints(
             .and_then(Item::as_table)
             .with_context(|| format!("`[{tool}]` missing from lints.toml"))?;
         let mut known = all.clone();
-        skipped.extend(supported.retain(&mut known, kind));
+        skipped.extend(toolchain.retain(&mut known, kind));
         let yours = table_at(target, &[tool])?;
         table(yours, &known, kind, choices)?;
         remove(yours, all, kind, choices)?;
@@ -117,10 +117,10 @@ fn not_inheriting<'doc>(
 pub(crate) fn settings(
     clippy_toml: &mut DocumentMut,
     choices: Choices,
-    supported: &Supported,
+    toolchain: &Toolchain,
 ) -> Result<Vec<String>> {
     let mut preset: DocumentMut = SETTINGS.parse()?;
-    let skipped = supported.retain(&mut preset, Kind::ClippySetting);
+    let skipped = toolchain.retain(&mut preset, Kind::ClippySetting);
 
     table(clippy_toml, &preset, Kind::ClippySetting, choices)?;
     Ok(skipped)

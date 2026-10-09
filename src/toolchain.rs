@@ -1,13 +1,66 @@
+use std::collections::HashSet;
 use std::io::{Write as _, stderr};
 use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context as _, Result};
 use cargo_metadata::semver::Version;
+use toml_edit::{DocumentMut, Table};
 
+use crate::block::Kind;
+
+const VALIDITY: &str = include_str!("../rules/validity.toml");
 const CARGO_LINTS: Version = Version::new(1, 74, 0);
 
-pub(crate) fn rust_release(root: &Path) -> Result<Version> {
+pub(crate) struct Toolchain {
+    rust: Version,
+    known: HashSet<String>,
+}
+
+impl Toolchain {
+    pub(crate) fn detect(root: &Path) -> Result<Self> {
+        let rust = rust_release(root)?;
+        let known = known_by(&rust)?;
+        Ok(Self { rust, known })
+    }
+
+    pub(crate) fn reads_lints(&self) -> bool {
+        self.rust >= CARGO_LINTS
+    }
+
+    pub(crate) fn retain(&self, preset: &mut Table, kind: Kind) -> Vec<String> {
+        let mut skipped = Vec::new();
+        preset.retain(|name, _| {
+            let known = self.known.contains(&format!("{}.{name}", kind.section()));
+            if !known {
+                skipped.push(kind.label(name));
+            }
+            known
+        });
+        skipped
+    }
+
+    pub(crate) fn warn_skipped(&self, skipped: &[String]) -> Result<()> {
+        if !self.reads_lints() {
+            writeln!(
+                stderr(),
+                "warning: skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
+                release(&CARGO_LINTS)
+            )?;
+        }
+        if !skipped.is_empty() {
+            writeln!(
+                stderr(),
+                "warning: skipped what Rust {} does not know yet, upgrade it and rerun to add: {}",
+                release(&self.rust),
+                skipped.join(", ")
+            )?;
+        }
+        Ok(())
+    }
+}
+
+fn rust_release(root: &Path) -> Result<Version> {
     let output = Command::new("rustc")
         .arg("--version")
         .current_dir(root)
@@ -22,31 +75,21 @@ pub(crate) fn rust_release(root: &Path) -> Result<Version> {
     Ok(Version::new(rustc.major, rustc.minor, 0))
 }
 
-pub(crate) fn reads_lints(rust: &Version) -> Result<bool> {
-    let reads = *rust >= CARGO_LINTS;
-
-    if !reads {
-        writeln!(
-            stderr(),
-            "warning: skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
-            release(&CARGO_LINTS)
-        )?;
+fn known_by(rust: &Version) -> Result<HashSet<String>> {
+    let validity: DocumentMut = VALIDITY.parse()?;
+    let mut known = HashSet::new();
+    for (section, releases) in validity.iter() {
+        let names = releases
+            .as_table()
+            .context("validity section is not a table")?;
+        for (name, release) in names {
+            let since = release.as_str().context("release is not a string")?;
+            if Version::parse(&format!("{since}.0"))? <= *rust {
+                let _ = known.insert(format!("{section}.{name}"));
+            }
+        }
     }
-    Ok(reads)
-}
-
-pub(crate) fn warn_skipped(rust: &Version, skipped: &[String]) -> Result<()> {
-    if skipped.is_empty() {
-        return Ok(());
-    }
-
-    writeln!(
-        stderr(),
-        "warning: skipped what Rust {} does not know yet, upgrade it and rerun to add: {}",
-        release(rust),
-        skipped.join(", ")
-    )?;
-    Ok(())
+    Ok(known)
 }
 
 fn release(version: &Version) -> String {
