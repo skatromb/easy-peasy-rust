@@ -55,7 +55,7 @@ impl TomlFile {
             fs::write(&self.path, after).with_context(|| format!("writing {}", self.name))?;
         }
 
-        writeln!(stdout(), "{status} {}", self.name)?;
+        writeln!(stdout(), "{status:>12} {}", self.name)?;
         Ok(())
     }
 }

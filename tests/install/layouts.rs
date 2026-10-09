@@ -34,7 +34,7 @@ fn lists_every_workspace_member_in_one_block() {
     let output = install(&dir, &["--diff"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert_eq!(stdout.matches("Apply the lints to these crates").count(), 1);
+    assert_eq!(stdout.matches("Workspace lints").count(), 1);
     assert!(stdout.contains("\n  crates/one/Cargo.toml\n"));
     assert!(stdout.contains("\n  crates/two/Cargo.toml: { clippy = { unwrap_used = \"allow\" } } → { workspace = true }\n"));
 }

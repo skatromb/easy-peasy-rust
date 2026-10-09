@@ -21,6 +21,16 @@ impl Kind {
         }
     }
 
+    fn count(self, number: usize) -> String {
+        let noun = match self {
+            Self::ClippyLint | Self::RustcLint => "lint",
+            Self::ClippySetting => "setting",
+            Self::Inheritance => "crate",
+        };
+        let plural = if number == 1 { "" } else { "s" };
+        format!("{number} {noun}{plural}")
+    }
+
     const fn docs(self) -> &'static str {
         match self {
             Self::ClippyLint => "https://rust-lang.github.io/rust-clippy/master/index.html",
@@ -58,13 +68,24 @@ impl Question {
     const fn default(self, choices: Choices) -> bool {
         matches!(self, Self::Adopt) || choices.drop_existing
     }
+
+    const fn verb(self, choices: Choices) -> &'static str {
+        match self {
+            Self::Adopt => "Added",
+            Self::Replace if choices.drop_existing => "Replaced",
+            Self::Remove if choices.drop_existing => "Removed",
+            Self::Replace | Self::Remove => "Kept",
+        }
+    }
 }
+
+type Line = (String, Option<String>);
 
 pub(crate) struct Block {
     kind: Kind,
     title: String,
     shown: bool,
-    lines: Vec<String>,
+    lines: Vec<Line>,
 }
 
 impl Block {
@@ -78,21 +99,24 @@ impl Block {
     }
 
     pub(crate) fn push(&mut self, name: &str, yours: Option<&Item>, preset: &Item) {
-        let label = self.kind.label(name);
         let wanted = shown(preset);
-        self.lines.push(yours.map_or_else(
-            || format!("{label}: {wanted}"),
-            |mine| format!("{label}: {} → {wanted}", shown(mine)),
-        ));
+        let change = yours.map_or_else(
+            || wanted.clone(),
+            |mine| format!("{} → {wanted}", shown(mine)),
+        );
+        self.lines.push((self.kind.label(name), Some(change)));
     }
 
     pub(crate) fn push_name(&mut self, name: &str) {
-        self.lines.push(self.kind.label(name));
+        self.lines.push((self.kind.label(name), None));
     }
 
     pub(crate) fn ask(&mut self, question: Question, choices: Choices) -> Result<bool> {
         if self.lines.is_empty() {
             return Ok(false);
+        }
+        if choices.yes {
+            return self.summarize(question, choices);
         }
 
         let mut out = stdout().lock();
@@ -100,29 +124,38 @@ impl Block {
             writeln!(out, "{}\n{}\n", self.title, self.kind.docs())?;
             self.shown = true;
         }
-        for line in self.lines.drain(..) {
-            writeln!(out, "  {line}")?;
+        for (label, change) in self.lines.drain(..) {
+            match change {
+                Some(detail) => writeln!(out, "  {label}: {detail}")?,
+                None => writeln!(out, "  {label}")?,
+            }
         }
 
-        let answer = if choices.diff {
-            true
-        } else {
-            write!(out, "{} ", question.prompt(choices))?;
-            answer(&mut out, question, choices)?
-        };
+        let answer = choices.diff || answer(&mut out, question, choices)?;
         writeln!(out)?;
         Ok(answer)
+    }
+
+    fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {
+        let what = match question {
+            Question::Adopt => self.kind.count(self.lines.len()),
+            Question::Replace | Question::Remove => {
+                let labels: Vec<&str> =
+                    self.lines.iter().map(|(label, _)| label.as_str()).collect();
+                labels.join(", ")
+            }
+        };
+        self.lines.clear();
+        let verb = question.verb(choices);
+        writeln!(stdout(), "{verb:>12} {}: {what}", self.title)?;
+        Ok(question.default(choices))
     }
 }
 
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
-    let default = question.default(choices);
-    if choices.yes {
-        writeln!(out, "{}", if default { "y" } else { "n" })?;
-        return Ok(default);
-    }
-
+    write!(out, "{} ", question.prompt(choices))?;
     out.flush()?;
+    let default = question.default(choices);
     let line = stdin().lines().next().transpose()?.unwrap_or_default();
     Ok(match line.trim() {
         "" => default,

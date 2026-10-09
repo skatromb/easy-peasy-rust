@@ -45,7 +45,7 @@ pub(crate) fn inherit<'doc>(
     let root = (cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package"))
         .then_some(("Cargo.toml", cargo_toml));
     let (missing, changed) = not_inheriting(root.into_iter().chain(members), &preset);
-    let mut block = Block::new(Kind::Inheritance, "Apply the lints to these crates");
+    let mut block = Block::new(Kind::Inheritance, "Workspace lints");
 
     for (name, _) in &missing {
         block.push_name(name);
@@ -106,7 +106,7 @@ pub(crate) fn extras(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<(
 }
 
 fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> Result<()> {
-    let title = format!("You have {tool} lints that are not in `easy-peasy-rust`");
+    let title = format!("Your {tool} lints not in `easy-peasy-rust`");
     let mut block = Block::new(kind(tool)?, &title);
     for (name, _) in target
         .iter()
