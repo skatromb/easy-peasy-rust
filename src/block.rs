@@ -153,17 +153,20 @@ impl Block {
 }
 
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
-    write!(out, "{} ", question.prompt(choices))?;
-    out.flush()?;
-    let default = question.default(choices);
-    let line = stdin().lines().next().transpose()?.unwrap_or_default();
-    Ok(match line.trim() {
-        "" => default,
-        typed => typed.eq_ignore_ascii_case("y"),
-    })
+    loop {
+        write!(out, "{} ", question.prompt(choices))?;
+        out.flush()?;
+        let line = stdin().lines().next().transpose()?.unwrap_or_default();
+        match line.trim().to_ascii_lowercase().as_str() {
+            "" => return Ok(question.default(choices)),
+            "y" | "yes" => return Ok(true),
+            "n" | "no" => return Ok(false),
+            _ => {}
+        }
+    }
 }
 
-fn shown(setting: &Item) -> String {
+pub(crate) fn shown(setting: &Item) -> String {
     setting.clone().into_value().map_or_else(
         |_| setting.to_string(),
         |mut plain| {

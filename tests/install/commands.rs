@@ -39,6 +39,18 @@ fn asks_about_each_block() {
 }
 
 #[test]
+fn asks_again_on_an_unclear_answer() {
+    let dir = project("crate");
+    let mut session = ask(&dir, &[]);
+    drop(session.exp_string("Adopt? [Y/n] ").unwrap());
+
+    let _ = session.send_line("maybe").unwrap();
+
+    let between = session.exp_string("Adopt? [Y/n] ").unwrap();
+    assert!(!between.contains("https://"), "{between}");
+}
+
+#[test]
 fn matches_the_preset_after_yes_to_everything() {
     let dir = project("crate");
 
