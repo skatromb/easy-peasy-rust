@@ -16,8 +16,8 @@ fn installs_into_a_virtual_workspace_from_a_member() {
         .unwrap();
 
     assert!(output.status.success());
-    let warning = String::from_utf8(output.stderr).unwrap();
-    assert!(warning.contains("crates/two/Cargo.toml keeps its own lints"));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("Kept Workspace lints: crates/two/Cargo.toml\n"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
     assert!(!cargo_toml.contains("\n[lints"));

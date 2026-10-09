@@ -39,19 +39,12 @@ fn replace_own(
         block.push(manifest.name(), manifest.doc().get("lints"), preset);
     }
     if !block.ask(Question::Replace, choices)? {
-        return warn_kept(&changed);
+        return Ok(());
     }
     if !choices.diff {
         warn_dropped(&changed)?;
     }
     switch(changed, preset);
-    Ok(())
-}
-
-fn warn_kept(manifests: &[&mut TomlFile]) -> Result<()> {
-    for manifest in manifests {
-        writeln!(stderr(), "warning: {} keeps its own lints", manifest.name())?;
-    }
     Ok(())
 }
 
