@@ -4,12 +4,14 @@ import re
 import subprocess
 from pathlib import Path
 
-TARGET = Path(__file__).resolve().parents[1] / "rustc"
-DOCS = "https://doc.rust-lang.org/1.99.0/rustc/lints/listing/allowed-by-default.html"
-ALLOWED_LINT = re.compile(r"^\s+([a-z0-9-]+)\s+allow\s+(.*)$", re.MULTILINE)
-HEAD = """# rustc allowed by default
+from toolchain import RUST
 
-Every rustc lint that is allowed by default as of Rust 1.99.
+TARGET = Path(__file__).resolve().parents[1] / "rustc"
+DOCS = f"https://doc.rust-lang.org/{RUST}.0/rustc/lints/listing/allowed-by-default.html"
+ALLOWED_LINT = re.compile(r"^\s+([a-z0-9-]+)\s+allow\s+(.*)$", re.MULTILINE)
+HEAD = f"""# rustc allowed by default
+
+Every rustc lint that is allowed by default as of Rust {RUST}.
 
 | Lint | Description |
 | --- | --- |
