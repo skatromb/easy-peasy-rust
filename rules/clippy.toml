@@ -9,7 +9,7 @@ allow-panic-in-tests = true
 allow-print-in-tests = true
 allow-unwrap-in-tests = true
 
-# Names, from wemake-python-styleguide WPS110 and WPS111, see external/wps_mapping.md
+# Names, from wemake-python-styleguide WPS110 and WPS111, see wps_mapping.md
 allowed-idents-below-min-chars = [] # WPS111 allows none either.
 check-inconsistent-struct-field-initializers = true # Struct literals list fields in definition order.
 disallowed-names = [
