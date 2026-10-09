@@ -37,7 +37,7 @@ unused_lifetimes = "warn" # Unused.
 unused_macro_rules = "warn" # Unused macro arms.
 unused_qualifications = "warn" # `a::b` where `b` is in scope.
 
-# Left at rustc's default, besides edition migrations that `cargo fix --edition` turns on:
+# rustc's defaults, besides edition migrations that `cargo fix --edition` turns on:
 # - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
 # - deprecated_in_future = "allow": for std's own deprecations.
 # - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
@@ -46,19 +46,21 @@ unused_qualifications = "warn" # `a::b` where `b` is in scope.
 # - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.
 
 [clippy]
-# Everything on, then allow what does not fit
+# Nursery and pedantic
 nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
 pedantic = { level = "warn", priority = -1 } # Strict but sound.
 redundant_pub_crate = "allow" # Contradicts rustc `unreachable_pub`.
 
+# Restriction
 blanket_clippy_restriction_lints = "allow" # `restriction` is on as a whole on purpose.
 restriction = { level = "warn", priority = -1 } # All on, then allow what does not fit, below.
 
+# Cargo
 cargo = { level = "warn", priority = -1 } # `*` versions, odd feature names.
 cargo_common_metadata = "allow" # Fires on private crates too, unless `publish = false`.
 multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot fix.
 
-# Don't panic: shipped code returns errors. Tests may, see clippy.toml
+# No panics
 arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
 cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
 expect_used = "deny" # Panics.
@@ -72,7 +74,7 @@ unimplemented = "deny" # Unfinished code must not ship.
 unreachable = "deny" # Panics.
 unwrap_used = "deny" # Panics.
 
-# Readable code: pick one side of lints that contradict each other or another lint that is on
+# Contradicting lints
 assertions_on_result_states = "allow" # Its fix, `unwrap()`, is denied.
 big_endian_bytes = "allow" # Excludes `little_` and `host_endian_bytes`. Picks network order.
 implicit_return = "allow" # Contradicts `needless_return`.
@@ -83,7 +85,7 @@ self_named_module_files = "allow" # Opposite of `mod_module_files`.
 semicolon_outside_block = "allow" # Opposite of `semicolon_inside_block`. Picks `;` inside: temporaries drop at once.
 separated_literal_suffix = "allow" # Opposite of `unseparated_literal_suffix`. Picks `1_u32`.
 
-# Readable code: idiomatic Rust
+# Idiomatic Rust
 arbitrary_source_item_ordering = "allow" # Sorts by name. Code reads better top-down.
 impl_trait_in_params = "allow" # Bans `impl Trait` arguments.
 missing_trait_methods = "allow" # Defeats default methods.
@@ -93,7 +95,7 @@ question_mark_used = "allow" # Bans `?`.
 rest_pattern_accessible_field = "allow" # `..` in patterns is fine.
 single_call_fn = "allow" # Small named functions are often called once.
 
-# Readable code: noise
+# Noise
 clone_on_ref_ptr = "allow" # `Rc::clone(&x)` over `x.clone()`.
 default_numeric_fallback = "allow" # A suffix on every literal.
 inline_trait_bounds = "allow" # `where` for every bound.
@@ -102,7 +104,7 @@ missing_docs_in_private_items = "allow" # rustc `missing_docs` covers the public
 missing_inline_in_public_items = "allow" # Premature optimisation.
 non_ascii_literal = "allow" # Text is Unicode. `non_ascii_idents` guards names.
 
-# Readable code: niche
+# Niche
 exhaustive_enums = "allow" # `#[non_exhaustive]` matters for library semver only.
 exhaustive_structs = "allow" # Same.
 float_arithmetic = "allow" # Bans float math.

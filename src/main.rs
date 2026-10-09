@@ -1,6 +1,6 @@
 //! `cargo easy-peasy`: installs the easy-peasy-rust lint preset into a Cargo workspace.
 
-mod conflict;
+mod block;
 mod merge;
 mod supported;
 mod toml_file;
@@ -35,14 +35,11 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Apply the preset without asking.
+    /// Apply the preset without asking, keeping your lints it does not set.
     #[arg(short = 'y', long)]
     yes: bool,
-    /// Drop the lints the preset does not set.
-    #[arg(long)]
-    drop_existing: bool,
     /// Print the diff from the preset, without writing anything.
-    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
+    #[arg(long, conflicts_with = "yes")]
     diff: bool,
 }
 
@@ -56,7 +53,7 @@ fn main() -> Result<()> {
 
     ensure!(
         stdin().is_terminal() || choices.yes,
-        "Use `--yes` for a non-interactive run to accept the preset's value on every conflict"
+        "Use `--yes` for a non-interactive run"
     );
 
     install(&cli_args.path, choices)?;
@@ -87,19 +84,18 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let root = workspace.root();
     let rust = toolchain::rust_release(root)?;
     let supported = Supported::new(&rust)?;
-    let mut files = Vec::new();
-    let mut skipped = Vec::new();
+    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
+    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &supported)?;
+    let mut files = vec![clippy_toml];
 
     if toolchain::reads_lints(&rust)? {
         let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
-        skipped = merge::lints(cargo_toml.doc_mut(), choices, &supported)?;
+        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
+        let members = members(&workspace, choices)?;
+        merge::extras(cargo_toml.doc_mut(), choices)?;
         files.push(cargo_toml);
-        files.extend(members(&workspace, choices)?);
+        files.extend(members);
     }
-
-    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
-    skipped.extend(merge::settings(clippy_toml.doc_mut(), choices, &supported)?);
-    files.push(clippy_toml);
 
     skipped.sort();
     toolchain::warn_skipped(&rust, &skipped)?;
