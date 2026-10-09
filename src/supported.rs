@@ -32,10 +32,10 @@ impl Supported {
         Ok(Self { entries })
     }
 
-    pub(crate) fn retain(&self, preset: &mut Table, section: &str, kind: Kind) -> Vec<String> {
+    pub(crate) fn retain(&self, preset: &mut Table, kind: Kind) -> Vec<String> {
         let mut skipped = Vec::new();
         preset.retain(|name, _| {
-            let known = self.entries.contains(&format!("{section}.{name}"));
+            let known = self.entries.contains(&format!("{}.{name}", kind.section()));
             if !known {
                 skipped.push(kind.label(name));
             }

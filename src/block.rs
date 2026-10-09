@@ -21,6 +21,15 @@ impl Kind {
         }
     }
 
+    pub(crate) const fn section(self) -> &'static str {
+        match self {
+            Self::ClippyLint => "clippy",
+            Self::RustcLint => "rust",
+            Self::ClippySetting => "clippy.toml",
+            Self::Inheritance => "lints",
+        }
+    }
+
     fn count(self, number: usize) -> String {
         let noun = match self {
             Self::ClippyLint | Self::RustcLint => "lint",

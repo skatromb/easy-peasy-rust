@@ -1,7 +1,7 @@
 use std::io::{Write as _, stderr};
 use std::{iter, mem};
 
-use anyhow::{Context as _, Result, bail};
+use anyhow::{Context as _, Result};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
@@ -10,6 +10,7 @@ use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
+const TOOLS: [Kind; 2] = [Kind::RustcLint, Kind::ClippyLint];
 
 type Entry<'preset> = (&'preset Key, &'preset Item);
 type Setting<'preset> = (&'preset Key, Item);
@@ -25,14 +26,17 @@ pub(crate) fn lints(
     let path = lints_path(cargo_toml);
     let target = table_at(cargo_toml, path)?;
     let mut skipped = Vec::new();
-    for (tool, lints) in preset.iter() {
-        let kind = kind(tool)?;
-        let mut known = lints
-            .as_table()
-            .context("preset tool is not a table")?
-            .clone();
-        skipped.extend(supported.retain(&mut known, tool, kind));
-        table(table_at(target, &[tool])?, &known, kind, choices)?;
+    for kind in TOOLS {
+        let tool = kind.section();
+        let all = preset
+            .get(tool)
+            .and_then(Item::as_table)
+            .with_context(|| format!("`[{tool}]` missing from lints.toml"))?;
+        let mut known = all.clone();
+        skipped.extend(supported.retain(&mut known, kind));
+        let yours = table_at(target, &[tool])?;
+        table(yours, &known, kind, choices)?;
+        remove(yours, all, kind, choices)?;
     }
     Ok(skipped)
 }
@@ -116,26 +120,15 @@ pub(crate) fn settings(
     supported: &Supported,
 ) -> Result<Vec<String>> {
     let mut preset: DocumentMut = SETTINGS.parse()?;
-    let skipped = supported.retain(&mut preset, "clippy.toml", Kind::ClippySetting);
+    let skipped = supported.retain(&mut preset, Kind::ClippySetting);
 
     table(clippy_toml, &preset, Kind::ClippySetting, choices)?;
     Ok(skipped)
 }
 
-pub(crate) fn extras(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
-    let preset: DocumentMut = LINTS.parse()?;
-    let path = lints_path(cargo_toml);
-    let target = table_at(cargo_toml, path)?;
-    for (tool, lints) in preset.iter() {
-        let known = lints.as_table().context("preset tool is not a table")?;
-        remove(table_at(target, &[tool])?, known, tool, choices)?;
-    }
-    Ok(())
-}
-
-fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> Result<()> {
-    let title = format!("Your {tool} lints not in `easy-peasy-rust`");
-    let mut block = Block::new(kind(tool)?, &title);
+fn remove(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
+    let title = format!("Your {} lints not in `easy-peasy-rust`", kind.section());
+    let mut block = Block::new(kind, &title);
     for (name, _) in target
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
@@ -154,14 +147,6 @@ fn lints_path(cargo_toml: &DocumentMut) -> &'static [&'static str] {
         &["workspace", "lints"]
     } else {
         &["lints"]
-    }
-}
-
-fn kind(tool: &str) -> Result<Kind> {
-    match tool {
-        "clippy" => Ok(Kind::ClippyLint),
-        "rust" => Ok(Kind::RustcLint),
-        _ => bail!("unknown lint tool `{tool}` in the preset"),
     }
 }
 
