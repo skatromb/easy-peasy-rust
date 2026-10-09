@@ -50,35 +50,37 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
     let choices = cli_args.choices;
 
-    if choices.diff {
-        return install(&cli_args.path, choices);
-    }
-
     ensure!(
-        stdin().is_terminal() || choices.yes,
+        choices.diff || choices.yes || stdin().is_terminal(),
         "Use `--yes` for a non-interactive run, or `--diff` to only look"
     );
+    if !choices.diff && !choices.yes {
+        writeln!(
+            stdout(),
+            "Press Enter for the default answer, or rerun with `--yes` to take all defaults without asking.\n"
+        )?;
+    }
 
-    install(&cli_args.path, choices)?;
+    let files = merged(&cli_args.path, choices)?;
+    if choices.diff {
+        return report(&files);
+    }
+    save(&files)
+}
+
+fn report(files: &[TomlFile]) -> Result<()> {
+    if !files.iter().any(TomlFile::is_changed) {
+        writeln!(stdout(), "Your settings match the preset")?;
+    }
+    Ok(())
+}
+
+fn save(files: &[TomlFile]) -> Result<()> {
+    files.iter().try_for_each(TomlFile::save)?;
     writeln!(
         stdout(),
         "Run `cargo clippy --workspace --all-targets` to see what it flags."
     )?;
-
-    Ok(())
-}
-
-fn install(path: &Path, choices: Choices) -> Result<()> {
-    let files = merged(path, choices)?;
-
-    if !choices.diff {
-        return files.iter().try_for_each(TomlFile::save);
-    }
-
-    if !files.iter().any(TomlFile::is_changed) {
-        writeln!(stdout(), "Your settings match the preset")?;
-    }
-
     Ok(())
 }
 
