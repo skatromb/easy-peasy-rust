@@ -9,7 +9,7 @@ Run it inside a workspace or a single crate, or pass the path.
 ```sh
 cargo install easy-peasy-rust
 cargo easy-peasy [path]           # add what you lack, keep your lints
-cargo easy-peasy --drop-existing  # apply the whole preset, drop your lint settings
+cargo easy-peasy --drop-existing  # apply the whole preset, drop your other lints
 cargo easy-peasy --interactive    # ask about each block of lint rules that differs
 cargo easy-peasy --diff           # only print the diff and fail on some
 ```
@@ -44,7 +44,7 @@ Per crate, at the top of `src/lib.rs` or `src/main.rs`:
 
 Cargo does not allow a member to combine `workspace = true` with its own lint keys.
 
-Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` keeps it: Enter on `Replace yours?` means no.
+Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` keeps it, `--drop-existing` resets it.
 
 ## Versioning
 
