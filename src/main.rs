@@ -38,10 +38,10 @@ struct Choices {
     /// Ask about each block of lint rules that differs.
     #[arg(short, long)]
     interactive: bool,
-    /// Replace and remove your own settings. With `--interactive`, only the default answer.
+    /// Overwrite completely your settings. With `--interactive` only changes the default answer.
     #[arg(long)]
     drop_existing: bool,
-    /// Print the diff from the preset and fail on any, without writing anything.
+    /// Print the diff from the preset, exit 1 if there is some.
     #[arg(long, conflicts_with_all = ["interactive", "drop_existing"])]
     diff: bool,
 }
