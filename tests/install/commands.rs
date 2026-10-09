@@ -59,6 +59,9 @@ fn takes_the_preset_and_keeps_your_other_lints_with_yes() {
     assert!(stderr.contains("--drop-existing"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("unwrap_used = \"deny\"\n"));
+    assert!(cargo_toml.contains(
+        "\n\n# Don't panic: shipped code returns errors. Tests may, see clippy.toml\narithmetic_side_effects = \"deny\"\n"
+    ));
     assert!(cargo_toml.contains("dbg_macro = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");

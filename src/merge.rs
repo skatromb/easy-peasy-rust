@@ -1,7 +1,7 @@
 use std::iter;
 
 use anyhow::{Context as _, Result, bail};
-use toml_edit::{DocumentMut, Item, Table, Value, value};
+use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
 use crate::conflict::{self, Conflict, Kind};
@@ -69,24 +69,30 @@ fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    for (key, commented) in preset {
+    for (key, commented) in entries(preset) {
         let setting = uncommented(commented);
-        match target.get_mut(key) {
+        match target.get_mut(key.get()) {
             None => {
                 if choices.diff {
-                    Conflict::new(kind, key, None, Some(&setting)).show()?;
+                    Conflict::new(kind, key.get(), None, Some(&setting)).show()?;
                 }
-                drop(target.insert(key, setting));
+                drop(target.insert_formatted(key, setting));
             }
             Some(current) if same(current, &setting) => {}
             Some(current) => {
-                if Conflict::new(kind, key, Some(current), Some(&setting)).resolve(choices)? {
+                if Conflict::new(kind, key.get(), Some(current), Some(&setting)).resolve(choices)? {
                     *current = setting;
                 }
             }
         }
     }
     Ok(())
+}
+
+fn entries(table: &Table) -> impl Iterator<Item = (&Key, &Item)> {
+    table
+        .iter()
+        .filter_map(|(name, _)| table.get_key_value(name))
 }
 
 fn uncommented(setting: &Item) -> Item {

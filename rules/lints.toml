@@ -65,8 +65,7 @@ std_instead_of_alloc = "allow" # For `no_std`.
 std_instead_of_core = "allow" # For `no_std`.
 
 [rust]
-# Every stable lint allowed by default is on, except the noise at the end and edition migration
-# ones, which `cargo fix --edition` turns on
+# Every stable allowed-by-default lint, except noise and edition migrations (`cargo fix --edition`)
 
 # Safety
 ffi_unwind_calls = "warn" # Unwinding across FFI.
