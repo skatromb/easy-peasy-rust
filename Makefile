@@ -24,7 +24,7 @@ build:
 	cargo build --release
 
 dogfood:
-	cargo run --quiet -- easy-peasy --yes
+	cargo run --quiet -- easy-peasy --yes --drop-existing
 
 scrape:
 	$(SCRAPE) python wps.py
