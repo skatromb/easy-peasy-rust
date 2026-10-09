@@ -111,9 +111,10 @@ impl Block {
 
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
     let default = question.default();
-    if choices.yes {
-        writeln!(out, "{}", if default { "y" } else { "n" })?;
-        return Ok(default);
+    if choices.yes || choices.drop_existing {
+        let reply = default || choices.drop_existing;
+        writeln!(out, "{}", if reply { "y" } else { "n" })?;
+        return Ok(reply);
     }
 
     out.flush()?;

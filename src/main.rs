@@ -38,8 +38,11 @@ struct Choices {
     /// Add what the preset sets and you lack, without asking. Keeps your own settings.
     #[arg(short = 'y', long)]
     yes: bool,
-    /// Print the diff from the preset, without writing anything.
+    /// Apply the whole preset without asking. Replaces and removes your own settings.
     #[arg(long, conflicts_with = "yes")]
+    drop_existing: bool,
+    /// Print the diff from the preset, without writing anything.
+    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
     diff: bool,
 }
 
@@ -52,8 +55,8 @@ fn main() -> Result<()> {
     }
 
     ensure!(
-        stdin().is_terminal() || choices.yes,
-        "Use `--yes` for a non-interactive run"
+        stdin().is_terminal() || choices.yes || choices.drop_existing,
+        "Use `--yes` or `--drop-existing` for a non-interactive run"
     );
 
     install(&cli_args.path, choices)?;

@@ -11,6 +11,7 @@ cargo install easy-peasy-rust
 cargo easy-peasy [path]  # asks about each block that differs, then about your lints `easy-peasy-rust` does not list
 cargo easy-peasy --diff  # print the diff from `easy-peasy-rust`, don't write anything
 cargo easy-peasy --yes   # add what you lack without asking, keep everything you set
+cargo easy-peasy --drop-existing  # apply the whole preset without asking, drop your own settings
 ```
 
 Then use your IDE as usual or run clippy manually:

@@ -104,6 +104,17 @@ fn adds_the_preset_and_keeps_yours_with_yes() {
     assert!(clippy_is_silent(&dir));
 }
 
+#[test]
+fn applies_the_whole_preset_with_drop_existing() {
+    let dir = project("crate");
+
+    assert!(install(&dir, &["--drop-existing"]).status.success());
+
+    assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
+    let diff = install(&dir, &["--diff"]);
+    assert_eq!(diff.stdout, b"Your settings match the preset\n");
+}
+
 fn answer(mut session: PtySession, reply: &str) -> Vec<String> {
     let mut questions = Vec::new();
     while let Ok((lines, prompt)) = session.exp_regex(r"\? \[(Y/n|y/N)\] ") {
