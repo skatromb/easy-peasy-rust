@@ -41,7 +41,7 @@ struct Choices {
     /// Default to replacing and removing your own settings. With `--yes`, applies the whole preset.
     #[arg(long)]
     drop_existing: bool,
-    /// Print the diff from the preset, without writing anything.
+    /// Print the diff from the preset and fail on any, without writing anything.
     #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
     diff: bool,
 }
@@ -63,15 +63,17 @@ fn main() -> Result<()> {
 
     let files = merged(&cli_args.path, choices)?;
     if choices.diff {
-        return report(&files);
+        return compare(&files);
     }
     save(&files)
 }
 
-fn report(files: &[TomlFile]) -> Result<()> {
-    if !files.iter().any(TomlFile::is_changed) {
-        writeln!(stdout(), "Your settings match the preset")?;
-    }
+fn compare(files: &[TomlFile]) -> Result<()> {
+    ensure!(
+        !files.iter().any(TomlFile::is_changed),
+        "Your settings differ from the preset"
+    );
+    writeln!(stdout(), "Your settings match the preset")?;
     Ok(())
 }
 

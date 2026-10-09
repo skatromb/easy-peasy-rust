@@ -12,7 +12,7 @@ cargo easy-peasy --yes --drop-existing  # apply the whole preset without asking,
 cargo easy-peasy --yes   # add what you lack without asking, keep your lints
 
 cargo easy-peasy [path]  # asks about each block of lint rules that differs
-cargo easy-peasy --diff  # print the diff from `easy-peasy-rust`, don't write anything
+cargo easy-peasy --diff  # print the diff from `easy-peasy-rust` and fail on any, don't write anything
 ```
 
 Then use your IDE as usual or run clippy manually:

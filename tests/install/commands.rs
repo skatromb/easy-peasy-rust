@@ -83,6 +83,7 @@ fn lists_differences_without_writing_with_diff() {
 
     let output = install(&dir, &["--diff"]);
 
+    assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("  clippy::unwrap_used: \"allow\" → \"deny\"\n"));
     assert!(stdout.contains("  clippy::panic: \"deny\"\n"));
