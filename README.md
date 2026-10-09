@@ -29,9 +29,9 @@ Every lint pick is explained in [`lints.toml`](rules/lints.toml) and [`clippy.to
 
 ## What it writes
 
-- `[workspace.lints.clippy]` and `[workspace.lints.rust]` into the root `Cargo.toml` (`[lints.*]` for a single crate),
+- `[workspace.lints.rust]` and `[workspace.lints.clippy]` into the root `Cargo.toml` (`[lints.*]` for a single crate),
 - `[lints] workspace = true` into every member crate, the root package included,
-- the thresholds into `clippy.toml`, or into `.clippy.toml` if that is what you have.
+- the settings into `clippy.toml`, or into `.clippy.toml` if that is what you have.
 
 Lints of other tools, like `[lints.rustdoc]`, and `clippy.toml` settings the preset does not set are never touched.
 
@@ -49,7 +49,7 @@ Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold 
 
 ## Versioning
 
-`1.99.x` targets Rust 1.99; older toolchains warn about the lints they do not have yet.
+`1.99.x` has the lints of Rust 1.99. Older toolchains get only the lints and settings they know, per [`validity.toml`](rules/validity.toml): upgrade Rust and rerun `cargo easy-peasy` to add the rest.
 
 ## License
 

@@ -26,6 +26,16 @@ pub(crate) enum Kind {
     Inheritance,
 }
 
+impl Kind {
+    pub(crate) fn label(self, name: &str) -> String {
+        match self {
+            Self::ClippyLint => format!("clippy::{name}"),
+            Self::RustcLint | Self::ClippySetting => name.to_owned(),
+            Self::Inheritance => format!("[lints] in {name}"),
+        }
+    }
+}
+
 pub(crate) struct Conflict {
     kind: Kind,
     name: String,
@@ -104,12 +114,12 @@ impl Display for Conflict {
             yours,
             preset,
         } = self;
-        match kind {
-            Kind::ClippyLint => write!(f, "clippy::{name}"),
-            Kind::RustcLint | Kind::ClippySetting => write!(f, "{name}"),
-            Kind::Inheritance => write!(f, "[lints] in {name}"),
-        }?;
-        write!(f, ": yours {yours}, preset {preset}\n  {}", self.docs())
+        write!(
+            f,
+            "{}: yours {yours}, preset {preset}\n  {}",
+            kind.label(name),
+            self.docs()
+        )
     }
 }
 

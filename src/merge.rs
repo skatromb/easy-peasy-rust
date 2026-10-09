@@ -5,24 +5,28 @@ use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
 use crate::conflict::{self, Conflict, Kind};
+use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
 
-pub(crate) fn lints(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
+pub(crate) fn lints(
+    cargo_toml: &mut DocumentMut,
+    choices: Choices,
+    supported: &Supported,
+) -> Result<Vec<String>> {
     let is_workspace = cargo_toml.contains_key("workspace");
     let path: &[&str] = if is_workspace {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    let kept = tools(table_at(cargo_toml, path)?, choices)?;
-    conflict::warn_kept(&kept)?;
+    let skipped = tools(table_at(cargo_toml, path)?, choices, supported)?;
 
     if is_workspace && cargo_toml.contains_key("package") {
         inherit(cargo_toml, "Cargo.toml", choices)?;
     }
-    Ok(())
+    Ok(skipped)
 }
 
 pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
@@ -46,14 +50,22 @@ pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices
     Ok(())
 }
 
-pub(crate) fn settings(clippy_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
-    let preset: DocumentMut = SETTINGS.parse()?;
-    table(clippy_toml, &preset, Kind::ClippySetting, choices)
+pub(crate) fn settings(
+    clippy_toml: &mut DocumentMut,
+    choices: Choices,
+    supported: &Supported,
+) -> Result<Vec<String>> {
+    let mut preset: DocumentMut = SETTINGS.parse()?;
+    let skipped = supported.retain(&mut preset, "clippy.toml", Kind::ClippySetting);
+
+    table(clippy_toml, &preset, Kind::ClippySetting, choices)?;
+    Ok(skipped)
 }
 
-fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
+fn tools(target: &mut Table, choices: Choices, supported: &Supported) -> Result<Vec<String>> {
     let preset: DocumentMut = LINTS.parse()?;
     let mut kept = Vec::new();
+    let mut skipped = Vec::new();
     for (tool, lints) in preset.iter() {
         let kind = match tool {
             "clippy" => Kind::ClippyLint,
@@ -61,11 +73,17 @@ fn tools(target: &mut Table, choices: Choices) -> Result<Vec<Conflict>> {
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
         let preset_lints = lints.as_table().context("preset tool is not a table")?;
+
+        let mut known = preset_lints.clone();
+        skipped.extend(supported.retain(&mut known, tool, kind));
+
         let tool_lints = table_at(target, &[tool])?;
-        table(tool_lints, preset_lints, kind, choices)?;
+        table(tool_lints, &known, kind, choices)?;
         kept.extend(existing(tool_lints, preset_lints, kind, choices)?);
     }
-    Ok(kept)
+
+    conflict::warn_kept(&kept)?;
+    Ok(skipped)
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
