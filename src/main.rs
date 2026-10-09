@@ -60,7 +60,6 @@ fn main() -> Result<()> {
     );
 
     install(&cli_args.path, choices)?;
-
     writeln!(
         stdout(),
         "Run `cargo clippy --workspace --all-targets` to see what it flags."
@@ -75,9 +74,11 @@ fn install(path: &Path, choices: Choices) -> Result<()> {
     if !choices.diff {
         return files.iter().try_for_each(TomlFile::save);
     }
+
     if !files.iter().any(TomlFile::is_changed) {
         writeln!(stdout(), "Your settings match the preset")?;
     }
+
     Ok(())
 }
 
@@ -102,6 +103,7 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
 
     skipped.sort();
     toolchain::warn_skipped(&rust, &skipped)?;
+
     Ok(files)
 }
 
