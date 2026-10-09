@@ -1,6 +1,6 @@
 [package]
 name = "easy-peasy-rust"
-version = "1.99.2"
+version = "1.99.3"
 edition = "2024"
 rust-version = "1.91"
 description = "Opinionated clippy and rustc lint preset in the spirit of wemake-python-styleguide"
