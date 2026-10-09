@@ -105,11 +105,10 @@ unused_lifetimes = "warn" # Unused.
 unused_macro_rules = "warn" # Unused macro arms.
 unused_qualifications = "warn" # `a::b` where `b` is in scope.
 
-# Noise, left off as rustc has them:
-# - dead_code_pub_in_binary: a test harness is a binary, so it flags library `pub` items tests
-#   skip. Adds little: `dead_code` covers all but `pub` items in `main.rs`.
-# - deprecated_in_future: for std's own deprecations.
-# - elided_lifetimes_in_paths: `Lifetimes<'_>` everywhere.
-# - linker_info: harmless linker chatter, like `ld: ignoring duplicate libraries`.
-# - missing_debug_implementations: `Debug` on every public type.
-# - unused_crate_dependencies: flags dev-dependencies in every target that does not use them.
+# Left at rustc's default:
+# - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
+# - deprecated_in_future = "allow": for std's own deprecations.
+# - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
+# - linker_info = "allow": harmless linker chatter, like `ld: ignoring duplicate libraries`.
+# - missing_debug_implementations = "allow": `Debug` on every public type.
+# - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.
