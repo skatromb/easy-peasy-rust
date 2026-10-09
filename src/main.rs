@@ -56,7 +56,7 @@ fn main() -> Result<()> {
 
     ensure!(
         stdin().is_terminal() || choices.yes,
-        "Use `--yes` for a non-interactive run"
+        "Use `--yes` for a non-interactive run, or `--diff` to only look"
     );
 
     install(&cli_args.path, choices)?;
