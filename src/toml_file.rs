@@ -30,12 +30,16 @@ impl TomlFile {
         })
     }
 
-    pub(crate) const fn doc_mut(&mut self) -> &mut DocumentMut {
-        &mut self.doc
+    pub(crate) fn name(&self) -> &str {
+        &self.name
     }
 
-    pub(crate) fn manifest(&mut self) -> (&str, &mut DocumentMut) {
-        (&self.name, &mut self.doc)
+    pub(crate) const fn doc(&self) -> &DocumentMut {
+        &self.doc
+    }
+
+    pub(crate) const fn doc_mut(&mut self) -> &mut DocumentMut {
+        &mut self.doc
     }
 
     pub(crate) fn is_changed(&self) -> bool {

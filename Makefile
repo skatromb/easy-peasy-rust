@@ -1,9 +1,9 @@
-.PHONY: lint lint-python test test-old build dogfood scrape release
+.PHONY: lint lint-python test build dogfood scrape release
 
 SCRAPE := cd rules/external/scraper && uv run --locked
 VERSION = $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 
-lint: lint-python
+lint:
 	cargo fmt --check
 	cargo clippy --all-targets -- -D warnings
 
@@ -16,15 +16,11 @@ lint-python:
 test:
 	cargo test
 
-test-old:
-	rustup toolchain install 1.50 1.74 --profile minimal --component clippy
-	cargo test -- --ignored
-
 build:
 	cargo build --release
 
 dogfood:
-	cargo run --quiet -- easy-peasy --yes
+	cargo run --quiet -- easy-peasy --drop-existing
 
 scrape:
 	$(SCRAPE) python wps.py

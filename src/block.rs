@@ -1,4 +1,5 @@
-use std::io::{Write, stdin, stdout};
+use std::fmt::Display;
+use std::io::{Write, stderr, stdin, stdout};
 
 use anyhow::Result;
 use toml_edit::Item;
@@ -18,6 +19,15 @@ impl Kind {
         match self {
             Self::ClippyLint => format!("clippy::{name}"),
             Self::RustcLint | Self::ClippySetting | Self::Inheritance => name.to_owned(),
+        }
+    }
+
+    pub(crate) const fn section(self) -> &'static str {
+        match self {
+            Self::ClippyLint => "clippy",
+            Self::RustcLint => "rust",
+            Self::ClippySetting => "clippy.toml",
+            Self::Inheritance => "lints",
         }
     }
 
@@ -79,13 +89,16 @@ impl Question {
     }
 }
 
-type Line = (String, Option<String>);
+struct Change {
+    label: String,
+    detail: String,
+}
 
 pub(crate) struct Block {
     kind: Kind,
     title: String,
     shown: bool,
-    lines: Vec<Line>,
+    changes: Vec<Change>,
 }
 
 impl Block {
@@ -94,28 +107,23 @@ impl Block {
             kind,
             title: title.to_owned(),
             shown: false,
-            lines: Vec::new(),
+            changes: Vec::new(),
         }
     }
 
-    pub(crate) fn push(&mut self, name: &str, yours: Option<&Item>, preset: &Item) {
-        let wanted = shown(preset);
-        let change = yours.map_or_else(
-            || wanted.clone(),
-            |mine| format!("{} → {wanted}", shown(mine)),
-        );
-        self.lines.push((self.kind.label(name), Some(change)));
-    }
-
-    pub(crate) fn push_name(&mut self, name: &str) {
-        self.lines.push((self.kind.label(name), None));
+    pub(crate) fn push(&mut self, name: &str, yours: Option<&Item>, preset: Option<&Item>) {
+        let sides: Vec<String> = [yours, preset].into_iter().flatten().map(shown).collect();
+        self.changes.push(Change {
+            label: self.kind.label(name),
+            detail: sides.join(" → "),
+        });
     }
 
     pub(crate) fn ask(&mut self, question: Question, choices: Choices) -> Result<bool> {
-        if self.lines.is_empty() {
+        if self.changes.is_empty() {
             return Ok(false);
         }
-        if choices.yes {
+        if !choices.interactive && !choices.diff {
             return self.summarize(question, choices);
         }
 
@@ -124,11 +132,8 @@ impl Block {
             writeln!(out, "{}\n{}\n", self.title, self.kind.docs())?;
             self.shown = true;
         }
-        for (label, change) in self.lines.drain(..) {
-            match change {
-                Some(detail) => writeln!(out, "  {label}: {detail}")?,
-                None => writeln!(out, "  {label}")?,
-            }
+        for Change { label, detail } in self.changes.drain(..) {
+            writeln!(out, "  {label}: {detail}")?;
         }
 
         let answer = choices.diff || answer(&mut out, question, choices)?;
@@ -138,14 +143,17 @@ impl Block {
 
     fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {
         let what = match question {
-            Question::Adopt => self.kind.count(self.lines.len()),
+            Question::Adopt => self.kind.count(self.changes.len()),
             Question::Replace | Question::Remove => {
-                let labels: Vec<&str> =
-                    self.lines.iter().map(|(label, _)| label.as_str()).collect();
+                let labels: Vec<&str> = self
+                    .changes
+                    .iter()
+                    .map(|change| change.label.as_str())
+                    .collect();
                 labels.join(", ")
             }
         };
-        self.lines.clear();
+        self.changes.clear();
         let verb = question.verb(choices);
         writeln!(stdout(), "{verb:>12} {}: {what}", self.title)?;
         Ok(question.default(choices))
@@ -164,6 +172,11 @@ fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<
             _ => {}
         }
     }
+}
+
+pub(crate) fn warn(text: impl Display) -> Result<()> {
+    writeln!(stderr(), "warning: {text}")?;
+    Ok(())
 }
 
 pub(crate) fn shown(setting: &Item) -> String {

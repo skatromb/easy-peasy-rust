@@ -13,10 +13,10 @@ allow-unwrap-in-tests = true
 allowed-idents-below-min-chars = [] # WPS111 allows none either.
 check-inconsistent-struct-field-initializers = true # Struct literals list fields in definition order.
 disallowed-names = [
-    "arr", "args", "bar", "baz", "content", "contents", "data", "foo", "ham", "handle", "handler",
-    "info", "item", "items", "no", "obj", "object", "objects", "objs", "param", "params",
-    "parameters", "result", "results", "some", "spam", "temp", "tmp", "val", "vals", "value",
-    "values", "var", "variable", "vars", "wrapper", "yes",
+    "arr", "args", "bar", "baz", "content", "contents", "data", "entries", "entry", "foo", "ham",
+    "handle", "handler", "info", "item", "items", "no", "obj", "object", "objects", "objs", "param",
+    "params", "parameters", "result", "results", "some", "spam", "temp", "tmp", "val", "vals",
+    "value", "values", "var", "variable", "vars", "wrapper", "yes",
 ] # WPS110, rewritten for Rust.
 min-ident-chars-threshold = 2 # Stricter than WPS111: flags 2-char names like `id` too.
 upper-case-acronyms-aggressive = true # `XmlParser` over `XMLParser`, `Http` over `HTTP`.

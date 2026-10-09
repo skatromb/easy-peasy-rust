@@ -1,8 +1,8 @@
 //! `cargo easy-peasy`: installs the easy-peasy-rust lint preset into a Cargo workspace.
 
 mod block;
+mod inheritance;
 mod merge;
-mod supported;
 mod toml_file;
 mod toolchain;
 mod workspace;
@@ -12,8 +12,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Result, ensure};
 use clap::{Args, Parser};
-use supported::Supported;
 use toml_file::TomlFile;
+use toolchain::Toolchain;
 use workspace::Workspace;
 
 #[derive(Parser)]
@@ -35,14 +35,14 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Add what the preset sets and you lack, without asking. Keeps your own settings.
-    #[arg(short = 'y', long)]
-    yes: bool,
-    /// Default to replacing and removing your own settings. With `--yes`, applies the whole preset.
+    /// Ask about each block of lint rules that differs.
+    #[arg(short, long)]
+    interactive: bool,
+    /// Overwrite completely your settings. With `--interactive` only changes the default answer.
     #[arg(long)]
     drop_existing: bool,
-    /// Print the diff from the preset, without writing anything.
-    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
+    /// Print the diff from the preset, exit 1 if there is some.
+    #[arg(long, conflicts_with_all = ["interactive", "drop_existing"])]
     diff: bool,
 }
 
@@ -50,28 +50,24 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
     let choices = cli_args.choices;
 
-    ensure!(
-        choices.diff || choices.yes || stdin().is_terminal(),
-        "Use `--yes` for a non-interactive run, or `--diff` to only look"
-    );
-    if !choices.diff && !choices.yes {
-        writeln!(
-            stdout(),
-            "Press Enter for the default answer, or rerun with `--yes` to take all defaults without asking.\n"
-        )?;
+    if choices.interactive {
+        ensure!(stdin().is_terminal(), "`--interactive` needs a terminal");
+        writeln!(stdout(), "Press Enter for the default answer.\n")?;
     }
 
     let files = merged(&cli_args.path, choices)?;
     if choices.diff {
-        return report(&files);
+        return compare(&files);
     }
     save(&files)
 }
 
-fn report(files: &[TomlFile]) -> Result<()> {
-    if !files.iter().any(TomlFile::is_changed) {
-        writeln!(stdout(), "Your settings match the preset")?;
-    }
+fn compare(files: &[TomlFile]) -> Result<()> {
+    ensure!(
+        !files.iter().any(TomlFile::is_changed),
+        "Your settings differ from the preset"
+    );
+    writeln!(stdout(), "Your settings match the preset")?;
     Ok(())
 }
 
@@ -86,25 +82,22 @@ fn save(files: &[TomlFile]) -> Result<()> {
 
 fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
-    let rust = toolchain::rust_release(workspace.root())?;
-    let supported = Supported::new(&rust)?;
+    let toolchain = Toolchain::detect(workspace.root())?;
     let mut clippy_toml = workspace.clippy_toml()?;
-    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &supported)?;
+    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &toolchain)?;
     let mut files = vec![clippy_toml];
 
-    if toolchain::reads_lints(&rust)? {
+    if toolchain.reads_lints() {
         let mut cargo_toml = workspace.cargo_toml()?;
-        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
+        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &toolchain)?);
         let mut members = workspace.members()?;
-        let manifests = members.iter_mut().map(TomlFile::manifest);
-        merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
-        merge::extras(cargo_toml.doc_mut(), choices)?;
+        inheritance::merge(&mut cargo_toml, &mut members, choices)?;
         files.push(cargo_toml);
         files.extend(members);
     }
 
     skipped.sort();
-    toolchain::warn_skipped(&rust, &skipped)?;
+    toolchain.warn_skipped(&skipped)?;
 
     Ok(files)
 }

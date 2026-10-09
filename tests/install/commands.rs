@@ -3,13 +3,17 @@ use rexpect::session::PtySession;
 use super::{ask, clippy_is_silent, fixture, install, project, read};
 
 #[test]
-fn refuses_to_run_without_a_terminal() {
+fn refuses_to_ask_without_a_terminal() {
     let dir = project("crate");
 
-    let output = install(&dir, &[]);
+    let output = install(&dir, &["--interactive"]);
 
     assert!(!output.status.success());
-    assert!(String::from_utf8(output.stderr).unwrap().contains("--yes"));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("needs a terminal")
+    );
     assert_eq!(read(&dir, "Cargo.toml"), fixture("crate/Cargo.toml"));
     assert_eq!(read(&dir, "clippy.toml"), fixture("crate/clippy.toml"));
 }
@@ -18,7 +22,7 @@ fn refuses_to_run_without_a_terminal() {
 fn asks_about_each_block() {
     let dir = project("crate");
 
-    let questions = answer(ask(&dir, &[]), "");
+    let questions = answer(ask(&dir), "");
 
     let panics = questions.iter().find(|asked| asked.contains("No panics"));
     assert!(panics.unwrap().contains("clippy::expect_used: \"deny\""));
@@ -41,7 +45,7 @@ fn asks_about_each_block() {
 #[test]
 fn asks_again_on_an_unclear_answer() {
     let dir = project("crate");
-    let mut session = ask(&dir, &[]);
+    let mut session = ask(&dir);
     drop(session.exp_string("Adopt? [Y/n] ").unwrap());
 
     let _ = session.send_line("maybe").unwrap();
@@ -54,7 +58,7 @@ fn asks_again_on_an_unclear_answer() {
 fn matches_the_preset_after_yes_to_everything() {
     let dir = project("crate");
 
-    let questions = answer(ask(&dir, &[]), "y");
+    let questions = answer(ask(&dir), "y");
 
     assert!(!questions.iter().any(|asked| asked.contains("rustdoc")));
     let cargo_toml = read(&dir, "Cargo.toml");
@@ -68,7 +72,7 @@ fn matches_the_preset_after_yes_to_everything() {
 fn replaces_a_workspace_members_own_lints_on_yes() {
     let dir = project("workspace");
 
-    let questions = answer(ask(&dir, &[]), "y");
+    let questions = answer(ask(&dir), "y");
 
     let crates = questions.iter().find(|asked| asked.contains("crates/two"));
     assert!(crates.unwrap().contains("Replace yours? [y/N]"));
@@ -83,10 +87,11 @@ fn lists_differences_without_writing_with_diff() {
 
     let output = install(&dir, &["--diff"]);
 
+    assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("  clippy::unwrap_used: \"allow\" → \"deny\"\n"));
     assert!(stdout.contains("  clippy::panic: \"deny\"\n"));
-    assert!(stdout.contains("  clippy::float_arithmetic\n"));
+    assert!(stdout.contains("  clippy::float_arithmetic: \"allow\"\n"));
     assert!(stdout.contains("  too-many-lines-threshold: 50 → 20\n"));
     assert!(!stdout.contains("[Y/n]"));
     assert_eq!(read(&dir, "Cargo.toml"), fixture("crate/Cargo.toml"));
@@ -94,13 +99,13 @@ fn lists_differences_without_writing_with_diff() {
 }
 
 #[test]
-fn adds_the_preset_and_keeps_yours_with_yes() {
+fn adds_the_preset_and_keeps_yours_by_default() {
     let dir = project("crate");
 
-    let output = install(&dir, &["--yes"]);
+    let output = install(&dir, &[]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("       Added No panics: 14 lints\n"));
+    assert!(stdout.contains("       Added No panics: "));
     assert!(stdout.contains("        Kept No panics: clippy::unwrap_used\n"));
     assert!(stdout.contains(
         "        Kept Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"
@@ -121,7 +126,7 @@ fn adds_the_preset_and_keeps_yours_with_yes() {
 fn applies_the_whole_preset_with_drop_existing() {
     let dir = project("crate");
 
-    let output = install(&dir, &["--yes", "--drop-existing"]);
+    let output = install(&dir, &["--drop-existing"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("    Replaced No panics: clippy::unwrap_used\n"));

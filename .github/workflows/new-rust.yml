@@ -29,6 +29,7 @@ jobs:
           gh pr comment "$PR" --body-file - <<'EOF'
           New Rust, new preset release:
 
+          - [ ] Refresh `rules/external` with `make scrape`
           - [ ] Add the new rustc lints worth having from the [Rust changelog](https://doc.rust-lang.org/stable/releases.html)
           - [ ] Allow the new clippy lints from the diff below that do not fit
           - [ ] Add every new preset entry to `rules/validity.toml` with the new Rust version
@@ -60,7 +61,7 @@ jobs:
         run: |
           rustup toolchain install
           cargo build --release
-          target/release/cargo-easy-peasy easy-peasy transferred --drop-existing --yes
+          target/release/cargo-easy-peasy easy-peasy transferred --drop-existing
 
       - name: Lint transferred with the old Rust
         run: .github/lint-transferred.sh base/rust-toolchain.toml old_lints.txt

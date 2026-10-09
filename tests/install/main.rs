@@ -22,13 +22,13 @@ fn project(fixture: &str) -> TempDir {
 }
 
 fn copy(source: &Path, destination: &Path) {
-    for entry in fs::read_dir(source).unwrap().map(Result::unwrap) {
-        let target = destination.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
+    for child in fs::read_dir(source).unwrap().map(Result::unwrap) {
+        let target = destination.join(child.file_name());
+        if child.file_type().unwrap().is_dir() {
             fs::create_dir_all(&target).unwrap();
-            copy(&entry.path(), &target);
+            copy(&child.path(), &target);
         } else {
-            let _ = fs::copy(entry.path(), target).unwrap();
+            let _ = fs::copy(child.path(), target).unwrap();
         }
     }
 }
@@ -51,9 +51,11 @@ fn install(dir: &TempDir, flags: &[&str]) -> Output {
         .unwrap()
 }
 
-fn ask(dir: &TempDir, flags: &[&str]) -> PtySession {
+fn ask(dir: &TempDir) -> PtySession {
     let mut command = Command::new(BIN);
-    let _ = command.arg("easy-peasy").arg(dir.path()).args(flags);
+    let _ = command
+        .args(["easy-peasy", "--interactive"])
+        .arg(dir.path());
     spawn_command(command, Some(30_000)).unwrap()
 }
 

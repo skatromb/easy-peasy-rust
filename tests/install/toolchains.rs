@@ -15,7 +15,7 @@ fn run_on(rust: &str, command: &mut Command, dir: &TempDir) -> Output {
 fn install_and_lint(rust: &str) -> (TempDir, String) {
     let dir = project("crate");
 
-    let install = run_on(rust, Command::new(BIN).args(["easy-peasy", "--yes"]), &dir);
+    let install = run_on(rust, Command::new(BIN).arg("easy-peasy"), &dir);
     let warnings = String::from_utf8(install.stderr).unwrap();
     assert!(install.status.success(), "{warnings}");
 
@@ -33,7 +33,7 @@ fn install_and_lint(rust: &str) -> (TempDir, String) {
 }
 
 #[test]
-#[ignore = "needs Rust 1.50 with clippy, run `make test-old`"]
+#[ignore = "needs Rust 1.50 with clippy, runs in CI"]
 fn installs_only_settings_before_cargo_reads_lints() {
     let (dir, warnings) = install_and_lint("1.50");
 
@@ -43,7 +43,7 @@ fn installs_only_settings_before_cargo_reads_lints() {
 }
 
 #[test]
-#[ignore = "needs Rust 1.74 with clippy, run `make test-old`"]
+#[ignore = "needs Rust 1.74 with clippy, runs in CI"]
 fn skips_what_the_first_rust_with_lints_does_not_know() {
     let (dir, warnings) = install_and_lint("1.74");
 

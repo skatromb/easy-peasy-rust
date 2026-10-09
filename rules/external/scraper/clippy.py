@@ -5,8 +5,10 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from toolchain import RUST
+
 REPO = "https://github.com/rust-lang/rust-clippy"
-TAG = "rust-1.99.0"
+TAG = f"rust-{RUST}.0"
 CLONE = (
     "git",
     "-c",
@@ -24,9 +26,9 @@ DECLARATION = re.compile(
 ESCAPE = re.compile(r"\\(.)", re.DOTALL)
 GROUPS = ("pedantic", "nursery", "restriction")
 Lint = tuple[str, str, str]
-HEAD = """# clippy {0}
+HEAD = """# clippy {group}
 
-Every lint of the clippy `{0}` group as of Rust 1.99. All are allowed by default.
+Every lint of the clippy `{group}` group as of Rust {rust}. All are allowed by default.
 
 | Lint | Description |
 | --- | --- |
@@ -54,7 +56,7 @@ def group_file(group: str, lints: list[Lint]) -> str:
         for lint_group, name, summary in lints
         if lint_group == group
     ]
-    return HEAD.format(group) + "".join(rows)
+    return HEAD.format(group=group, rust=RUST) + "".join(rows)
 
 
 def write_groups(source: Path) -> None:
