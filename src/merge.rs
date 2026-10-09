@@ -1,5 +1,5 @@
 use std::io::{Write as _, stderr};
-use std::iter;
+use std::{iter, mem};
 
 use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
@@ -250,12 +250,30 @@ fn uncommented(setting: &Item) -> Item {
 
 fn table_at<'doc>(root: &'doc mut Table, path: &[&str]) -> Result<&'doc mut Table> {
     path.iter().try_fold(root, |parent, name| {
+        unfold(parent, name);
         parent
             .entry(name)
             .or_insert_with(implicit_table)
             .as_table_mut()
             .with_context(|| format!("`{name}` in Cargo.toml is not a table"))
     })
+}
+
+fn unfold(parent: &mut Table, name: &str) {
+    let Some(folded) = parent.get_mut(name) else {
+        return;
+    };
+    if !folded.is_inline_table() && !folded.as_table().is_some_and(Table::is_dotted) {
+        return;
+    }
+    if let Ok(mut table) = mem::take(folded).into_table() {
+        table.set_dotted(false);
+        *folded = Item::Table(table);
+    }
+    parent.set_implicit(true);
+    if let Some(mut key) = parent.key_mut(name) {
+        key.leaf_decor_mut().clear();
+    }
 }
 
 fn implicit_table() -> Item {

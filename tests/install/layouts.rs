@@ -70,6 +70,24 @@ fn merges_into_a_hidden_clippy_toml() {
 }
 
 #[test]
+fn unfolds_inline_lints() {
+    let dir = project("crate");
+    let inline = fixture("crate/Cargo.toml")
+        .replace(
+            "[lints.clippy]\nunwrap_used = \"allow\"\n",
+            "[lints]\nclippy = { unwrap_used = \"allow\" }\n",
+        )
+        .replace("float_arithmetic = \"allow\"\n", "");
+    fs::write(dir.path().join("Cargo.toml"), inline).unwrap();
+
+    assert!(install(&dir, &["-y"]).status.success());
+
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("\n[lints.clippy]\n# Nursery and pedantic\n"));
+    assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
+}
+
+#[test]
 fn adds_missing_lints_back_to_their_blocks() {
     let dir = project("crate");
     assert!(install(&dir, &["-y"]).status.success());
