@@ -1,6 +1,7 @@
 //! `cargo easy-peasy`: installs the easy-peasy-rust lint preset into a Cargo workspace.
 
 mod block;
+mod inheritance;
 mod merge;
 mod toml_file;
 mod toolchain;
@@ -94,7 +95,7 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
         let mut cargo_toml = workspace.cargo_toml()?;
         skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &toolchain)?);
         let mut members = workspace.members()?;
-        merge::inherit(&mut cargo_toml, &mut members, choices)?;
+        inheritance::merge(&mut cargo_toml, &mut members, choices)?;
         files.push(cargo_toml);
         files.extend(members);
     }
