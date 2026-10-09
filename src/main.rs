@@ -86,17 +86,16 @@ fn save(files: &[TomlFile]) -> Result<()> {
 
 fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
-    let root = workspace.root();
-    let rust = toolchain::rust_release(root)?;
+    let rust = toolchain::rust_release(workspace.root())?;
     let supported = Supported::new(&rust)?;
-    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
+    let mut clippy_toml = workspace.clippy_toml()?;
     let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &supported)?;
     let mut files = vec![clippy_toml];
 
     if toolchain::reads_lints(&rust)? {
-        let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
+        let mut cargo_toml = workspace.cargo_toml()?;
         skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
-        let mut members = members(&workspace)?;
+        let mut members = workspace.members()?;
         let manifests = members.iter_mut().map(TomlFile::manifest);
         merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
         merge::extras(cargo_toml.doc_mut(), choices)?;
@@ -108,12 +107,4 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     toolchain::warn_skipped(&rust, &skipped)?;
 
     Ok(files)
-}
-
-fn members(workspace: &Workspace) -> Result<Vec<TomlFile>> {
-    workspace
-        .members()
-        .iter()
-        .map(|member| TomlFile::open(workspace.root(), member))
-        .collect()
 }
