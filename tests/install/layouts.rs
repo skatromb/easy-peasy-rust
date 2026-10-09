@@ -19,11 +19,11 @@ fn installs_into_a_virtual_workspace_from_a_member() {
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("\n[workspace.lints.clippy]\n"));
     assert!(!cargo_toml.contains("\n[lints"));
-    for name in ["one", "two"] {
-        let member_toml = read(&dir, &format!("crates/{name}/Cargo.toml"));
-        assert!(member_toml.ends_with(INHERITED));
-        assert!(!member_toml.contains("unwrap_used"));
-    }
+    assert!(read(&dir, "crates/one/Cargo.toml").ends_with(INHERITED));
+    assert_eq!(
+        read(&dir, "crates/two/Cargo.toml"),
+        fixture("workspace/crates/two/Cargo.toml")
+    );
     assert!(clippy_is_silent(&dir));
 }
 
@@ -51,7 +51,7 @@ fn merges_into_a_hidden_clippy_toml() {
 
     assert!(install(&dir, &["-y"]).status.success());
 
-    assert!(read(&dir, ".clippy.toml").contains("too-many-lines-threshold = 20"));
+    assert!(read(&dir, ".clippy.toml").contains("cognitive-complexity-threshold = 12"));
     assert!(!dir.path().join("clippy.toml").exists());
 }
 

@@ -18,33 +18,33 @@ fn refuses_to_run_without_a_terminal() {
 fn asks_about_each_block() {
     let dir = project("crate");
 
-    let blocks = answer(ask(&dir, &[]), |block| {
-        if block.contains("unwrap_used") {
-            "n"
-        } else {
-            ""
-        }
-    });
+    let questions = answer(ask(&dir, &[]), "");
 
-    let panics = blocks.iter().find(|block| block.contains("No panics"));
-    assert!(panics.unwrap().contains("clippy::unwrap_used: \"allow\""));
-    let extras = blocks.last().unwrap();
+    let panics = questions.iter().find(|asked| asked.contains("No panics"));
+    assert!(panics.unwrap().contains("clippy::expect_used: \"deny\""));
+    let yours = questions
+        .iter()
+        .find(|asked| asked.contains("clippy::unwrap_used"));
+    assert!(yours.unwrap().contains("Replace yours? [y/N]"));
+    let extras = questions.last().unwrap();
     assert!(extras.contains("You have clippy lints that are not in `easy-peasy-rust`"));
     assert!(extras.contains("clippy::float_arithmetic"));
     let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("expect_used = \"deny\"\n"));
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
-    assert!(!cargo_toml.contains("expect_used"));
     assert!(cargo_toml.contains("float_arithmetic = \"allow\"\n"));
-    assert!(read(&dir, "clippy.toml").contains("too-many-lines-threshold = 20"));
+    let clippy_toml = read(&dir, "clippy.toml");
+    assert!(clippy_toml.contains("cognitive-complexity-threshold = 12"));
+    assert!(clippy_toml.contains("too-many-lines-threshold = 50"));
 }
 
 #[test]
 fn matches_the_preset_after_yes_to_everything() {
     let dir = project("crate");
 
-    let blocks = answer(ask(&dir, &[]), |_| "y");
+    let questions = answer(ask(&dir, &[]), "y");
 
-    assert!(!blocks.iter().any(|block| block.contains("rustdoc")));
+    assert!(!questions.iter().any(|asked| asked.contains("rustdoc")));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(!cargo_toml.contains("float_arithmetic"));
     assert!(cargo_toml.contains("broken_intra_doc_links"));
@@ -69,32 +69,34 @@ fn lists_differences_without_writing_with_diff() {
 }
 
 #[test]
-fn takes_the_preset_and_keeps_your_other_lints_with_yes() {
+fn adds_the_preset_and_keeps_yours_with_yes() {
     let dir = project("crate");
 
     let output = install(&dir, &["--yes"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("  clippy::unwrap_used: \"allow\" → \"deny\"\n"));
     assert!(stdout.contains("Adopt? [Y/n] y\n"));
-    assert!(stdout.contains("  clippy::float_arithmetic\n"));
-    assert!(stdout.contains("Remove? [y/N] n\n"));
+    assert!(
+        stdout.contains("  clippy::unwrap_used: \"allow\" → \"deny\"\nReplace yours? [y/N] n\n")
+    );
+    assert!(stdout.contains("  clippy::float_arithmetic\nRemove? [y/N] n\n"));
     let cargo_toml = read(&dir, "Cargo.toml");
-    assert!(cargo_toml.contains("unwrap_used = \"deny\"\n"));
+    assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
     assert!(cargo_toml.contains("\n\n# No panics\narithmetic_side_effects = \"deny\"\n"));
     assert!(cargo_toml.contains("float_arithmetic = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
-    assert!(clippy_toml.contains("too-many-lines-threshold = 20"));
+    assert!(clippy_toml.contains("too-many-lines-threshold = 50"));
     assert!(clippy_toml.contains("msrv = \"1.85\"\n"));
     assert!(clippy_is_silent(&dir));
 }
 
-fn answer(mut session: PtySession, reply: impl Fn(&str) -> &'static str) -> Vec<String> {
-    let mut blocks = Vec::new();
-    while let Ok((block, _)) = session.exp_regex(r"Adopt\? \[Y/n\] |Remove\? \[y/N\] ") {
-        let _ = session.send_line(reply(&block)).unwrap();
-        blocks.push(block);
+fn answer(mut session: PtySession, reply: &str) -> Vec<String> {
+    let mut questions = Vec::new();
+    while let Ok((lines, prompt)) = session.exp_regex(r"\? \[(Y/n|y/N)\] ") {
+        let asked = format!("{lines}{prompt}");
+        let _ = session.send_line(reply).unwrap();
+        questions.push(asked);
     }
-    blocks
+    questions
 }

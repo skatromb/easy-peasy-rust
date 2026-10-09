@@ -11,6 +11,9 @@ const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
 
 type Entry<'preset> = (&'preset Key, &'preset Item);
+type Setting<'preset> = (&'preset Key, Item);
+type Missing<'preset> = Vec<Setting<'preset>>;
+type Changed<'preset> = Vec<Setting<'preset>>;
 
 pub(crate) fn lints(
     cargo_toml: &mut DocumentMut,
@@ -44,9 +47,14 @@ pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices
         return Ok(());
     }
 
-    let mut block = Block::new(Kind::Inheritance, "Workspace lints", Question::Adopt);
+    let question = if current.is_some() {
+        Question::Replace
+    } else {
+        Question::Adopt
+    };
+    let mut block = Block::new(Kind::Inheritance, "Workspace lints");
     block.push(name, current, &preset);
-    if block.ask(choices)? {
+    if block.ask(question, choices)? {
         cargo_toml["lints"] = preset;
     }
     Ok(())
@@ -77,7 +85,7 @@ pub(crate) fn extras(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<(
 
 fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> Result<()> {
     let title = format!("You have {tool} lints that are not in `easy-peasy-rust`");
-    let mut block = Block::new(kind(tool)?, &title, Question::Remove);
+    let mut block = Block::new(kind(tool)?, &title);
     for (name, _) in target
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
@@ -85,7 +93,7 @@ fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> R
         block.push_name(name);
     }
 
-    if block.ask(choices)? {
+    if block.ask(Question::Remove, choices)? {
         target.retain(|name, _| preset.contains_key(name));
     }
     Ok(())
@@ -116,30 +124,42 @@ fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Re
 
 fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices) -> Result<()> {
     let title = preset.first().and_then(|&(key, _)| header(key));
-    let mut block = Block::new(kind, title.unwrap_or_default(), Question::Adopt);
-    let mut differing = Vec::new();
-    for &(key, commented) in preset {
-        let setting = uncommented(commented);
-        let current = target.get(key.get());
-        if !current.is_some_and(|mine| same(mine, &setting)) {
-            block.push(key.get(), current, &setting);
-            differing.push((key, setting));
+    let mut block = Block::new(kind, title.unwrap_or_default());
+    let (missing, changed) = differing(target, preset);
+
+    for (key, setting) in &missing {
+        block.push(key.get(), None, setting);
+    }
+    if block.ask(Question::Adopt, choices)? {
+        for (key, setting) in missing {
+            drop(target.insert_formatted(key, setting));
         }
     }
 
-    if block.ask(choices)? {
-        for (key, setting) in differing {
-            set(target, key, setting);
+    for (key, setting) in &changed {
+        block.push(key.get(), target.get(key.get()), setting);
+    }
+    if block.ask(Question::Replace, choices)? {
+        for (key, setting) in changed {
+            target[key.get()] = setting;
         }
     }
     Ok(())
 }
 
-fn set(target: &mut Table, key: &Key, setting: Item) {
-    match target.get_mut(key.get()) {
-        Some(current) => *current = setting,
-        None => drop(target.insert_formatted(key, setting)),
-    }
+fn differing<'preset>(
+    target: &Table,
+    preset: &[Entry<'preset>],
+) -> (Missing<'preset>, Changed<'preset>) {
+    preset
+        .iter()
+        .map(|&(key, commented)| (key, uncommented(commented)))
+        .filter(|(key, setting)| {
+            !target
+                .get(key.get())
+                .is_some_and(|mine| same(mine, setting))
+        })
+        .partition(|(key, _)| !target.contains_key(key.get()))
 }
 
 fn header(key: &Key) -> Option<&str> {

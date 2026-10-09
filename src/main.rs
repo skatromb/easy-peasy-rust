@@ -35,7 +35,7 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Apply the preset without asking, keeping your lints it does not set.
+    /// Add what the preset sets and you lack, without asking. Keeps your own settings.
     #[arg(short = 'y', long)]
     yes: bool,
     /// Print the diff from the preset, without writing anything.
