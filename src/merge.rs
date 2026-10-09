@@ -1,3 +1,4 @@
+use std::io::{Write as _, stderr};
 use std::iter;
 
 use anyhow::{Context as _, Result, bail};
@@ -59,6 +60,18 @@ pub(crate) fn inherit<'doc>(
     }
     if block.ask(Question::Replace, choices)? {
         switch(changed, &preset);
+    } else {
+        warn_own_lints(&changed)?;
+    }
+    Ok(())
+}
+
+fn warn_own_lints(manifests: &[Manifest<'_>]) -> Result<()> {
+    for (name, _) in manifests {
+        writeln!(
+            stderr(),
+            "warning: {name} keeps its own lints, so it gets none of the preset. Move them to `#![allow(...)]` in the crate and rerun"
+        )?;
     }
     Ok(())
 }
