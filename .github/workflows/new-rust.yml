@@ -60,7 +60,7 @@ jobs:
         run: |
           rustup toolchain install
           cargo build --release
-          target/release/cargo-easy-peasy easy-peasy transferred --drop-existing
+          target/release/cargo-easy-peasy easy-peasy transferred --drop-existing --yes
 
       - name: Lint transferred with the old Rust
         run: .github/lint-transferred.sh base/rust-toolchain.toml old_lints.txt

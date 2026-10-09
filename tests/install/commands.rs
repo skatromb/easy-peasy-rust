@@ -108,8 +108,10 @@ fn adds_the_preset_and_keeps_yours_with_yes() {
 fn applies_the_whole_preset_with_drop_existing() {
     let dir = project("crate");
 
-    assert!(install(&dir, &["--drop-existing"]).status.success());
+    let output = install(&dir, &["--yes", "--drop-existing"]);
 
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("  clippy::float_arithmetic\nRemove? [Y/n] y\n"));
     assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
     let diff = install(&dir, &["--diff"]);
     assert_eq!(diff.stdout, b"Your settings match the preset\n");

@@ -43,14 +43,14 @@ pub(crate) enum Question {
 impl Question {
     const fn prompt(self) -> &'static str {
         match self {
-            Self::Adopt => "Adopt? [Y/n]",
-            Self::Replace => "Replace yours? [y/N]",
-            Self::Remove => "Remove? [y/N]",
+            Self::Adopt => "Adopt?",
+            Self::Replace => "Replace yours?",
+            Self::Remove => "Remove?",
         }
     }
 
-    const fn default(self) -> bool {
-        matches!(self, Self::Adopt)
+    const fn default(self, choices: Choices) -> bool {
+        matches!(self, Self::Adopt) || choices.drop_existing
     }
 }
 
@@ -101,7 +101,8 @@ impl Block {
         let answer = if choices.diff {
             true
         } else {
-            write!(out, "{} ", question.prompt())?;
+            let hint = if question.default(choices) { "[Y/n]" } else { "[y/N]" };
+            write!(out, "{} {hint} ", question.prompt())?;
             answer(&mut out, question, choices)?
         };
         writeln!(out)?;
@@ -110,11 +111,10 @@ impl Block {
 }
 
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
-    let default = question.default();
-    if choices.yes || choices.drop_existing {
-        let reply = default || choices.drop_existing;
-        writeln!(out, "{}", if reply { "y" } else { "n" })?;
-        return Ok(reply);
+    let default = question.default(choices);
+    if choices.yes {
+        writeln!(out, "{}", if default { "y" } else { "n" })?;
+        return Ok(default);
     }
 
     out.flush()?;
