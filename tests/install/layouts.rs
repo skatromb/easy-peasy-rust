@@ -104,7 +104,7 @@ fn assert_unfolds(folded: &str) {
     assert!(install(&dir, &[]).status.success());
 
     let cargo_toml = read(&dir, "Cargo.toml");
-    assert!(cargo_toml.contains("\n[lints.clippy]\n# Nursery and pedantic\n"));
+    assert!(cargo_toml.contains("\n[lints.clippy]\n# easy-peasy: Nursery and pedantic\n"));
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
 }
 
@@ -120,6 +120,22 @@ fn adds_missing_lints_back_to_their_blocks() {
 
     assert!(install(&dir, &[]).status.success());
 
+    assert_eq!(read(&dir, "Cargo.toml"), installed);
+}
+
+#[test]
+fn rearranges_moved_lints() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let installed = read(&dir, "Cargo.toml");
+    let lint = "ffi_unwind_calls = \"warn\"\n";
+    let moved = format!("{}{lint}", installed.replace(lint, ""));
+    fs::write(dir.path().join("Cargo.toml"), moved).unwrap();
+
+    let output = install(&dir, &[]);
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("\n  Rearranged rust lints to the preset's layout\n"));
     assert_eq!(read(&dir, "Cargo.toml"), installed);
 }
 

@@ -30,7 +30,9 @@ Every lint pick is explained in [`lints.toml`](rules/lints.toml) and [`clippy.to
 - `[lints] workspace = true` into every member crate, the root package included,
 - the settings into `clippy.toml`, or into `.clippy.toml` if that is what you have.
 
-Lints of other tools, like `[lints.rustdoc]`, and `clippy.toml` settings the preset does not set are never touched.
+Each preset block gets a `# easy-peasy: <block>` header, in the preset's order, and your own lints and settings go below them under `# easy-peasy: yours`.
+
+Lints of other tools, like `[lints.rustdoc]`, are never touched.
 
 ## Overriding
 

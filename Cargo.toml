@@ -1,6 +1,6 @@
 [package]
 name = "easy-peasy-rust"
-version = "1.99.4"
+version = "1.99.5"
 edition = "2024"
 rust-version = "1.91"
 description = "Opinionated clippy and rustc lint preset in the spirit of wemake-python-styleguide"
@@ -25,12 +25,12 @@ rexpect = "0.7.1"
 tempfile = "3.27.0"
 
 [lints.rust]
-# Safety
+# easy-peasy: Safety
 ffi_unwind_calls = "warn"
 raw_borrows_via_references = "warn"
 unsafe_code = "deny"
 
-# Hidden behaviour
+# easy-peasy: Hidden behaviour
 ambiguous_negative_literals = "warn"
 deref_into_dyn_supertrait = "warn"
 let_underscore_drop = "warn"
@@ -40,13 +40,13 @@ unstable_features = "warn"
 unused_results = "warn"
 variant_size_differences = "warn"
 
-# Public API
+# easy-peasy: Public API
 missing_copy_implementations = "warn"
 missing_docs = "warn"
 unnameable_types = "warn"
 unreachable_pub = "warn"
 
-# Dead code
+# easy-peasy: Dead code
 closure_returning_async_block = "warn"
 explicit_outlives_requirements = "warn"
 impl_trait_redundant_captures = "warn"
@@ -64,17 +64,17 @@ unused_macro_rules = "warn"
 unused_qualifications = "warn"
 
 [lints.clippy]
-# Nursery and pedantic
+# easy-peasy: Nursery and pedantic
 nursery = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 redundant_pub_crate = "allow"
 
-# Cargo
+# easy-peasy: Cargo
 cargo = { level = "warn", priority = -1 }
 cargo_common_metadata = "allow"
 multiple_crate_versions = "allow"
 
-# No panics
+# easy-peasy: No panics
 arithmetic_side_effects = "deny"
 cast_abs_to_unsigned = "deny"
 exit = "warn"
@@ -91,7 +91,7 @@ unreachable = "deny"
 unwrap_in_result = "warn"
 unwrap_used = "deny"
 
-# Explicit numbers and casts
+# easy-peasy: Explicit numbers and casts
 as_conversions = "warn"
 as_pointer_underscore = "warn"
 as_underscore = "warn"
@@ -107,7 +107,7 @@ non_zero_suggestions = "warn"
 precedence_bits = "warn"
 suspicious_xor_used_as_pow = "warn"
 
-# Documented unsafe
+# easy-peasy: Documented unsafe
 default_union_representation = "warn"
 inline_asm_x86_att_syntax = "warn"
 mem_forget = "warn"
@@ -116,19 +116,19 @@ undocumented_unsafe_blocks = "warn"
 unnecessary_safety_comment = "warn"
 unnecessary_safety_doc = "warn"
 
-# No debug output
+# easy-peasy: No debug output
 dbg_macro = "warn"
 pointer_format = "warn"
 print_stderr = "warn"
 print_stdout = "warn"
 use_debug = "warn"
 
-# Handled errors
+# easy-peasy: Handled errors
 map_err_ignore = "warn"
 try_err = "warn"
 unused_result_ok = "warn"
 
-# Naming
+# easy-peasy: Naming
 disallowed_script_idents = "warn"
 error_impl_error = "warn"
 min_ident_chars = "warn"
@@ -141,7 +141,7 @@ shadow_same = "warn"
 shadow_unrelated = "warn"
 single_char_lifetime_names = "warn"
 
-# Modules and imports
+# easy-peasy: Modules and imports
 absolute_paths = "warn"
 alloc_instead_of_core = "warn"
 cfg_not_test = "warn"
@@ -156,7 +156,7 @@ tests_outside_test_module = "warn"
 unnecessary_self_imports = "warn"
 unused_trait_names = "warn"
 
-# Explicit control flow and patterns
+# easy-peasy: Explicit control flow and patterns
 cognitive_complexity = "warn"
 else_if_without_else = "warn"
 infinite_loop = "warn"
@@ -167,7 +167,7 @@ unnecessary_rest_pattern = "warn"
 unneeded_field_pattern = "warn"
 wildcard_enum_match_arm = "warn"
 
-# Idiomatic std
+# easy-peasy: Idiomatic std
 create_dir = "warn"
 deref_by_slicing = "warn"
 filetype_is_file = "warn"
@@ -186,7 +186,7 @@ string_add = "warn"
 string_lit_chars_any = "warn"
 verbose_file_reads = "warn"
 
-# Consistent style
+# easy-peasy: Consistent style
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 doc_include_without_cfg = "warn"
