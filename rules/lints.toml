@@ -25,8 +25,7 @@ unimplemented = "deny" # Unfinished code must not ship.
 unreachable = "deny" # Panics.
 unwrap_used = "deny" # Panics.
 
-# Readable code: the restriction lints that do not fit
-# Pick one side: lints that contradict each other or another lint that is on
+# Readable code: pick one side of lints that contradict each other or another lint that is on
 assertions_on_result_states = "allow" # Its fix, `unwrap()`, is denied.
 big_endian_bytes = "allow" # Excludes `little_` and `host_endian_bytes`. Picks network order.
 implicit_return = "allow" # Contradicts `needless_return`.
@@ -65,9 +64,6 @@ std_instead_of_alloc = "allow" # For `no_std`.
 std_instead_of_core = "allow" # For `no_std`.
 
 [rust]
-# Every stable lint allowed by default is on, except the noise at the end and edition migration
-# ones, which `cargo fix --edition` turns on
-
 # Safety
 ffi_unwind_calls = "warn" # Unwinding across FFI.
 raw_borrows_via_references = "warn" # `&raw const x` over `&x as *const _`.
@@ -106,11 +102,10 @@ unused_lifetimes = "warn" # Unused.
 unused_macro_rules = "warn" # Unused macro arms.
 unused_qualifications = "warn" # `a::b` where `b` is in scope.
 
-# Noise, left off as rustc has them:
-# - dead_code_pub_in_binary: a test harness is a binary, so it flags library `pub` items tests
-#   skip. Adds little: `dead_code` covers all but `pub` items in `main.rs`.
-# - deprecated_in_future: for std's own deprecations.
-# - elided_lifetimes_in_paths: `Lifetimes<'_>` everywhere.
-# - linker_info: harmless linker chatter, like `ld: ignoring duplicate libraries`.
-# - missing_debug_implementations: `Debug` on every public type.
-# - unused_crate_dependencies: flags dev-dependencies in every target that does not use them.
+# Left at rustc's default, besides edition migrations that `cargo fix --edition` turns on:
+# - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
+# - deprecated_in_future = "allow": for std's own deprecations.
+# - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
+# - linker_info = "allow": harmless linker chatter, like `ld: ignoring duplicate libraries`.
+# - missing_debug_implementations = "allow": `Debug` on every public type.
+# - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.

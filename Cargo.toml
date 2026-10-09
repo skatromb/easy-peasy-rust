@@ -25,14 +25,19 @@ rexpect = "0.7.1"
 tempfile = "3.27.0"
 
 [lints.clippy]
+# Everything on, then allow what does not fit
 nursery = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 redundant_pub_crate = "allow"
+
 blanket_clippy_restriction_lints = "allow"
 restriction = { level = "warn", priority = -1 }
+
 cargo = { level = "warn", priority = -1 }
 cargo_common_metadata = "allow"
 multiple_crate_versions = "allow"
+
+# Don't panic: shipped code returns errors. Tests may, see clippy.toml
 arithmetic_side_effects = "deny"
 cast_abs_to_unsigned = "deny"
 expect_used = "deny"
@@ -45,6 +50,8 @@ unchecked_time_subtraction = "deny"
 unimplemented = "deny"
 unreachable = "deny"
 unwrap_used = "deny"
+
+# Readable code: pick one side of lints that contradict each other or another lint that is on
 assertions_on_result_states = "allow"
 big_endian_bytes = "allow"
 implicit_return = "allow"
@@ -54,6 +61,8 @@ pub_with_shorthand = "allow"
 self_named_module_files = "allow"
 semicolon_outside_block = "allow"
 separated_literal_suffix = "allow"
+
+# Readable code: idiomatic Rust
 arbitrary_source_item_ordering = "allow"
 impl_trait_in_params = "allow"
 missing_trait_methods = "allow"
@@ -62,6 +71,8 @@ pub_use = "allow"
 question_mark_used = "allow"
 rest_pattern_accessible_field = "allow"
 single_call_fn = "allow"
+
+# Readable code: noise
 clone_on_ref_ptr = "allow"
 default_numeric_fallback = "allow"
 inline_trait_bounds = "allow"
@@ -69,6 +80,8 @@ let_underscore_untyped = "allow"
 missing_docs_in_private_items = "allow"
 missing_inline_in_public_items = "allow"
 non_ascii_literal = "allow"
+
+# Readable code: niche
 exhaustive_enums = "allow"
 exhaustive_structs = "allow"
 float_arithmetic = "allow"
@@ -77,9 +90,12 @@ std_instead_of_alloc = "allow"
 std_instead_of_core = "allow"
 
 [lints.rust]
+# Safety
 ffi_unwind_calls = "warn"
 raw_borrows_via_references = "warn"
 unsafe_code = "deny"
+
+# Hidden behaviour
 ambiguous_negative_literals = "warn"
 deref_into_dyn_supertrait = "warn"
 let_underscore_drop = "warn"
@@ -88,10 +104,14 @@ non_ascii_idents = "warn"
 unstable_features = "warn"
 unused_results = "warn"
 variant_size_differences = "warn"
+
+# Public API
 missing_copy_implementations = "warn"
 missing_docs = "warn"
 unnameable_types = "warn"
 unreachable_pub = "warn"
+
+# Dead code
 closure_returning_async_block = "warn"
 explicit_outlives_requirements = "warn"
 impl_trait_redundant_captures = "warn"
