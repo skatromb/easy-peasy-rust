@@ -139,9 +139,41 @@ fn kind(tool: &str) -> Result<Kind> {
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
     let entries: Vec<_> = entries(preset).collect();
+    let existing = target.iter().map(|(name, _)| name.to_owned()).collect();
     entries
         .chunk_by(|_, &(key, _)| header(key).is_none())
-        .try_for_each(|block| adopt(target, block, kind, choices))
+        .try_for_each(|block| adopt(target, block, kind, choices))?;
+    arrange(target, &entries, existing);
+    Ok(())
+}
+
+fn arrange(target: &mut Table, preset: &[Entry<'_>], mut order: Vec<String>) {
+    for (index, &(key, _)) in preset.iter().enumerate() {
+        let name = key.get();
+        if target.contains_key(name) && !order.iter().any(|known| known == name) {
+            let slot = preset
+                .iter()
+                .skip(index)
+                .find_map(|(later, _)| order.iter().position(|known| known == later.get()))
+                .unwrap_or(order.len());
+            if let Some(next) = order.get(slot) {
+                hand_over_header(target, key, next);
+            }
+            order.insert(slot, name.to_owned());
+        }
+    }
+    target.sort_values_by(|one, _, other, _| {
+        let rank = |key: &Key| order.iter().position(|known| known == key.get());
+        rank(one).cmp(&rank(other))
+    });
+}
+
+fn hand_over_header(target: &mut Table, key: &Key, next: &str) {
+    if let Some(mut following) = target.key_mut(next)
+        && following.leaf_decor().prefix() == key.leaf_decor().prefix()
+    {
+        following.leaf_decor_mut().clear();
+    }
 }
 
 fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices) -> Result<()> {

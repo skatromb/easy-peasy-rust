@@ -68,6 +68,21 @@ fn merges_into_a_hidden_clippy_toml() {
 }
 
 #[test]
+fn adds_missing_lints_back_to_their_blocks() {
+    let dir = project("crate");
+    assert!(install(&dir, &["-y"]).status.success());
+    let installed = read(&dir, "Cargo.toml");
+    let without = installed
+        .replace("ffi_unwind_calls = \"warn\"\n", "")
+        .replace("let_underscore_drop = \"warn\"\n", "");
+    fs::write(dir.path().join("Cargo.toml"), without).unwrap();
+
+    assert!(install(&dir, &["-y"]).status.success());
+
+    assert_eq!(read(&dir, "Cargo.toml"), installed);
+}
+
+#[test]
 fn second_run_changes_nothing() {
     let dir = project("workspace");
     assert!(install(&dir, &["-y"]).status.success());
