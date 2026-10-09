@@ -6,6 +6,7 @@ use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
 use crate::block::{Block, Kind, Question, shown};
+use crate::toml_file::TomlFile;
 use crate::toolchain::Toolchain;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
@@ -14,7 +15,6 @@ const TOOLS: [Kind; 2] = [Kind::RustcLint, Kind::ClippyLint];
 
 type Entry<'preset> = (&'preset Key, &'preset Item);
 type Setting<'preset> = (&'preset Key, Item);
-type Manifest<'doc> = (&'doc str, &'doc mut DocumentMut);
 type Split<T> = (Vec<T>, Vec<T>);
 
 pub(crate) fn lints(
@@ -41,19 +41,19 @@ pub(crate) fn lints(
     Ok(skipped)
 }
 
-pub(crate) fn inherit<'doc>(
-    cargo_toml: &'doc mut DocumentMut,
-    members: impl Iterator<Item = Manifest<'doc>>,
+pub(crate) fn inherit(
+    cargo_toml: &mut TomlFile,
+    members: &mut [TomlFile],
     choices: Choices,
 ) -> Result<()> {
     let preset = Item::Table(iter::once(("workspace", value(true))).collect());
-    let root = (cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package"))
-        .then_some(("Cargo.toml", cargo_toml));
+    let doc = cargo_toml.doc();
+    let root = (doc.contains_key("workspace") && doc.contains_key("package")).then_some(cargo_toml);
     let (missing, changed) = not_inheriting(root.into_iter().chain(members), &preset);
     let mut block = Block::new(Kind::Inheritance, "Workspace lints");
 
-    for (name, _) in &missing {
-        block.push_name(name);
+    for manifest in &missing {
+        block.push_name(manifest.name());
     }
     if block.ask(Question::Adopt, choices)? {
         switch(missing, &preset);
@@ -63,12 +63,12 @@ pub(crate) fn inherit<'doc>(
 
 fn replace_own(
     block: &mut Block,
-    changed: Vec<Manifest<'_>>,
+    changed: Vec<&mut TomlFile>,
     preset: &Item,
     choices: Choices,
 ) -> Result<()> {
-    for (name, manifest) in &changed {
-        block.push(name, manifest.get("lints"), preset);
+    for manifest in &changed {
+        block.push(manifest.name(), manifest.doc().get("lints"), preset);
     }
     if !block.ask(Question::Replace, choices)? {
         return warn_kept(&changed);
@@ -80,38 +80,43 @@ fn replace_own(
     Ok(())
 }
 
-fn warn_kept(manifests: &[Manifest<'_>]) -> Result<()> {
-    for (name, _) in manifests {
-        writeln!(stderr(), "warning: {name} keeps its own lints")?;
+fn warn_kept(manifests: &[&mut TomlFile]) -> Result<()> {
+    for manifest in manifests {
+        writeln!(stderr(), "warning: {} keeps its own lints", manifest.name())?;
     }
     Ok(())
 }
 
-fn warn_dropped(manifests: &[Manifest<'_>]) -> Result<()> {
-    for (name, manifest) in manifests {
-        let lints = manifest.get("lints").map(shown).unwrap_or_default();
-        writeln!(stderr(), "warning: {name} dropped its own lints: {lints}")?;
+fn warn_dropped(manifests: &[&mut TomlFile]) -> Result<()> {
+    for manifest in manifests {
+        let lints = manifest.doc().get("lints").map(shown).unwrap_or_default();
+        writeln!(
+            stderr(),
+            "warning: {} dropped its own lints: {lints}",
+            manifest.name()
+        )?;
     }
     Ok(())
 }
 
-fn switch(manifests: Vec<Manifest<'_>>, preset: &Item) {
-    for (_, manifest) in manifests {
-        manifest["lints"] = preset.clone();
+fn switch(manifests: Vec<&mut TomlFile>, preset: &Item) {
+    for manifest in manifests {
+        manifest.doc_mut()["lints"] = preset.clone();
     }
 }
 
 fn not_inheriting<'doc>(
-    manifests: impl Iterator<Item = Manifest<'doc>>,
+    manifests: impl Iterator<Item = &'doc mut TomlFile>,
     preset: &Item,
-) -> Split<Manifest<'doc>> {
+) -> Split<&'doc mut TomlFile> {
     manifests
-        .filter(|(_, manifest)| {
+        .filter(|manifest| {
             !manifest
+                .doc()
                 .get("lints")
                 .is_some_and(|lints| same(lints, preset))
         })
-        .partition(|(_, manifest)| !manifest.contains_key("lints"))
+        .partition(|manifest| !manifest.doc().contains_key("lints"))
 }
 
 pub(crate) fn settings(

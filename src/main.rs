@@ -94,8 +94,7 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
         let mut cargo_toml = workspace.cargo_toml()?;
         skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &toolchain)?);
         let mut members = workspace.members()?;
-        let manifests = members.iter_mut().map(TomlFile::manifest);
-        merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
+        merge::inherit(&mut cargo_toml, &mut members, choices)?;
         files.push(cargo_toml);
         files.extend(members);
     }
