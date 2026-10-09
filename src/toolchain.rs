@@ -24,6 +24,7 @@ pub(crate) fn rust_release(root: &Path) -> Result<Version> {
 
 pub(crate) fn reads_lints(rust: &Version) -> Result<bool> {
     let reads = *rust >= CARGO_LINTS;
+
     if !reads {
         writeln!(
             stderr(),

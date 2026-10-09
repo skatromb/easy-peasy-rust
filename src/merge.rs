@@ -56,6 +56,7 @@ pub(crate) fn settings(
     let mut preset: DocumentMut = SETTINGS.parse()?;
     let skipped = drop_newer(&mut preset, "clippy.toml", Kind::ClippySetting, rust)?;
     conflict::warn_skipped(&skipped)?;
+
     table(clippy_toml, &preset, Kind::ClippySetting, choices)
 }
 
@@ -70,12 +71,15 @@ fn tools(target: &mut Table, choices: Choices, rust: &Version) -> Result<Vec<Con
             _ => bail!("unknown lint tool `{tool}` in the preset"),
         };
         let preset_lints = lints.as_table().context("preset tool is not a table")?;
+
         let mut supported = preset_lints.clone();
         skipped.extend(drop_newer(&mut supported, tool, kind, rust)?);
+
         let tool_lints = table_at(target, &[tool])?;
         table(tool_lints, &supported, kind, choices)?;
         kept.extend(existing(tool_lints, preset_lints, kind, choices)?);
     }
+
     conflict::warn_skipped(&skipped)?;
     Ok(kept)
 }
@@ -88,6 +92,7 @@ fn drop_newer(
 ) -> Result<Vec<String>> {
     let validity: DocumentMut = VALIDITY.parse()?;
     let mut newer = Vec::new();
+
     for (name, _) in preset.iter() {
         let valid_from = validity
             .get(section)
@@ -98,6 +103,7 @@ fn drop_newer(
             newer.push(name.to_owned());
         }
     }
+
     for name in &newer {
         drop(preset.remove(name));
     }
