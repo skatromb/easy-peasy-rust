@@ -20,7 +20,7 @@ pub(crate) fn merge(
     let mut block = Block::new(Kind::Inheritance, "Workspace lints");
 
     for manifest in &missing {
-        block.push_name(manifest.name());
+        block.push(manifest.name());
     }
     if block.ask(Question::Adopt, choices)? {
         switch(missing, &preset);
@@ -35,7 +35,7 @@ fn replace_own(
     choices: Choices,
 ) -> Result<()> {
     for manifest in &changed {
-        block.push(manifest.name(), manifest.doc().get("lints"), preset);
+        block.push_setting(manifest.name(), manifest.doc().get("lints"), preset);
     }
     if !block.ask(Question::Replace, choices)? {
         return Ok(());

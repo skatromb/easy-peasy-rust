@@ -58,7 +58,7 @@ fn remove(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> R
         .iter()
         .filter(|&(name, _)| !preset.contains_key(name))
     {
-        block.push_name(name);
+        block.push(name);
     }
 
     if block.ask(Question::Remove, choices)? {
@@ -83,7 +83,7 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     let (missing, changed) = differing(target, preset);
 
     for (key, setting) in &missing {
-        block.push(key.get(), None, setting);
+        block.push_setting(key.get(), None, setting);
     }
     if block.ask(Question::Adopt, choices)? {
         for (key, setting) in missing {
@@ -92,7 +92,7 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     }
 
     for (key, setting) in &changed {
-        block.push(key.get(), target.get(key.get()), setting);
+        block.push_setting(key.get(), target.get(key.get()), setting);
     }
     if block.ask(Question::Replace, choices)? {
         for (key, setting) in changed {

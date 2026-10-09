@@ -111,7 +111,7 @@ impl Block {
         }
     }
 
-    pub(crate) fn push(&mut self, name: &str, yours: Option<&Item>, preset: &Item) {
+    pub(crate) fn push_setting(&mut self, name: &str, yours: Option<&Item>, preset: &Item) {
         let wanted = shown(preset);
         let detail = yours.map_or_else(
             || wanted.clone(),
@@ -123,7 +123,7 @@ impl Block {
         });
     }
 
-    pub(crate) fn push_name(&mut self, name: &str) {
+    pub(crate) fn push(&mut self, name: &str) {
         self.changes.push(Change {
             label: self.kind.label(name),
             detail: None,
