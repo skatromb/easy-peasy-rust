@@ -4,7 +4,7 @@ use anyhow::{Context as _, Result};
 use cargo_metadata::semver::Version;
 use toml_edit::{DocumentMut, Table};
 
-use crate::conflict::Kind;
+use crate::block::Kind;
 
 const VALIDITY: &str = include_str!("../rules/validity.toml");
 

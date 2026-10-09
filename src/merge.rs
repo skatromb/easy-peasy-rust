@@ -4,26 +4,34 @@ use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
-use crate::conflict::{self, Conflict, Kind};
+use crate::block::{Block, Kind, Question};
 use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
+
+type Entry<'preset> = (&'preset Key, &'preset Item);
 
 pub(crate) fn lints(
     cargo_toml: &mut DocumentMut,
     choices: Choices,
     supported: &Supported,
 ) -> Result<Vec<String>> {
-    let is_workspace = cargo_toml.contains_key("workspace");
-    let path: &[&str] = if is_workspace {
-        &["workspace", "lints"]
-    } else {
-        &["lints"]
-    };
-    let skipped = tools(table_at(cargo_toml, path)?, choices, supported)?;
+    let preset: DocumentMut = LINTS.parse()?;
+    let path = lints_path(cargo_toml);
+    let target = table_at(cargo_toml, path)?;
+    let mut skipped = Vec::new();
+    for (tool, lints) in preset.iter() {
+        let kind = kind(tool)?;
+        let mut known = lints
+            .as_table()
+            .context("preset tool is not a table")?
+            .clone();
+        skipped.extend(supported.retain(&mut known, tool, kind));
+        table(table_at(target, &[tool])?, &known, kind, choices)?;
+    }
 
-    if is_workspace && cargo_toml.contains_key("package") {
+    if cargo_toml.contains_key("workspace") && cargo_toml.contains_key("package") {
         inherit(cargo_toml, "Cargo.toml", choices)?;
     }
     Ok(skipped)
@@ -31,21 +39,15 @@ pub(crate) fn lints(
 
 pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
     let preset = Item::Table(iter::once(("workspace", value(true))).collect());
-    match cargo_toml.get_mut("lints") {
-        None => {
-            if choices.diff {
-                Conflict::new(Kind::Inheritance, name, None, Some(&preset)).show()?;
-            }
-            drop(cargo_toml.insert("lints", preset));
-        }
-        Some(current) if same(current, &preset) => {}
-        Some(current) => {
-            if Conflict::new(Kind::Inheritance, name, Some(current), Some(&preset))
-                .resolve(choices)?
-            {
-                *current = preset;
-            }
-        }
+    let current = cargo_toml.get("lints");
+    if current.is_some_and(|lints| same(lints, &preset)) {
+        return Ok(());
+    }
+
+    let mut block = Block::new(Kind::Inheritance, "Workspace lints", Question::Adopt);
+    block.push(name, current, &preset);
+    if block.ask(choices)? {
+        cargo_toml["lints"] = preset;
     }
     Ok(())
 }
@@ -62,52 +64,93 @@ pub(crate) fn settings(
     Ok(skipped)
 }
 
-fn tools(target: &mut Table, choices: Choices, supported: &Supported) -> Result<Vec<String>> {
+pub(crate) fn extras(cargo_toml: &mut DocumentMut, choices: Choices) -> Result<()> {
     let preset: DocumentMut = LINTS.parse()?;
-    let mut kept = Vec::new();
-    let mut skipped = Vec::new();
+    let path = lints_path(cargo_toml);
+    let target = table_at(cargo_toml, path)?;
     for (tool, lints) in preset.iter() {
-        let kind = match tool {
-            "clippy" => Kind::ClippyLint,
-            "rust" => Kind::RustcLint,
-            _ => bail!("unknown lint tool `{tool}` in the preset"),
-        };
-        let preset_lints = lints.as_table().context("preset tool is not a table")?;
+        let known = lints.as_table().context("preset tool is not a table")?;
+        remove(table_at(target, &[tool])?, known, tool, choices)?;
+    }
+    Ok(())
+}
 
-        let mut known = preset_lints.clone();
-        skipped.extend(supported.retain(&mut known, tool, kind));
-
-        let tool_lints = table_at(target, &[tool])?;
-        table(tool_lints, &known, kind, choices)?;
-        kept.extend(existing(tool_lints, preset_lints, kind, choices)?);
+fn remove(target: &mut Table, preset: &Table, tool: &str, choices: Choices) -> Result<()> {
+    let title = format!("You have {tool} lints that are not in `easy-peasy-rust`");
+    let mut block = Block::new(kind(tool)?, &title, Question::Remove);
+    for (name, _) in target
+        .iter()
+        .filter(|&(name, _)| !preset.contains_key(name))
+    {
+        block.push_name(name);
     }
 
-    conflict::warn_kept(&kept)?;
-    Ok(skipped)
+    if block.ask(choices)? {
+        target.retain(|name, _| preset.contains_key(name));
+    }
+    Ok(())
+}
+
+fn lints_path(cargo_toml: &DocumentMut) -> &'static [&'static str] {
+    if cargo_toml.contains_key("workspace") {
+        &["workspace", "lints"]
+    } else {
+        &["lints"]
+    }
+}
+
+fn kind(tool: &str) -> Result<Kind> {
+    match tool {
+        "clippy" => Ok(Kind::ClippyLint),
+        "rust" => Ok(Kind::RustcLint),
+        _ => bail!("unknown lint tool `{tool}` in the preset"),
+    }
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    for (key, commented) in entries(preset) {
+    let entries: Vec<_> = entries(preset).collect();
+    entries
+        .chunk_by(|_, &(key, _)| header(key).is_none())
+        .try_for_each(|block| adopt(target, block, kind, choices))
+}
+
+fn adopt(target: &mut Table, preset: &[Entry<'_>], kind: Kind, choices: Choices) -> Result<()> {
+    let title = preset.first().and_then(|&(key, _)| header(key));
+    let mut block = Block::new(kind, title.unwrap_or_default(), Question::Adopt);
+    let mut differing = Vec::new();
+    for &(key, commented) in preset {
         let setting = uncommented(commented);
-        match target.get_mut(key.get()) {
-            None => {
-                if choices.diff {
-                    Conflict::new(kind, key.get(), None, Some(&setting)).show()?;
-                }
-                drop(target.insert_formatted(key, setting));
-            }
-            Some(current) if same(current, &setting) => {}
-            Some(current) => {
-                if Conflict::new(kind, key.get(), Some(current), Some(&setting)).resolve(choices)? {
-                    *current = setting;
-                }
-            }
+        let current = target.get(key.get());
+        if !current.is_some_and(|mine| same(mine, &setting)) {
+            block.push(key.get(), current, &setting);
+            differing.push((key, setting));
+        }
+    }
+
+    if block.ask(choices)? {
+        for (key, setting) in differing {
+            set(target, key, setting);
         }
     }
     Ok(())
 }
 
-fn entries(table: &Table) -> impl Iterator<Item = (&Key, &Item)> {
+fn set(target: &mut Table, key: &Key, setting: Item) {
+    match target.get_mut(key.get()) {
+        Some(current) => *current = setting,
+        None => drop(target.insert_formatted(key, setting)),
+    }
+}
+
+fn header(key: &Key) -> Option<&str> {
+    key.leaf_decor()
+        .prefix()?
+        .as_str()?
+        .lines()
+        .find_map(|line| line.strip_prefix("# "))
+}
+
+fn entries(table: &Table) -> impl Iterator<Item = Entry<'_>> {
     table
         .iter()
         .filter_map(|(name, _)| table.get_key_value(name))
@@ -119,29 +162,6 @@ fn uncommented(setting: &Item) -> Item {
         plain.decor_mut().clear();
     }
     bare
-}
-
-fn existing(
-    target: &mut Table,
-    preset: &Table,
-    kind: Kind,
-    choices: Choices,
-) -> Result<Vec<Conflict>> {
-    let unset: Vec<Conflict> = target
-        .iter()
-        .filter(|&(name, _)| !preset.contains_key(name))
-        .map(|(name, current)| Conflict::new(kind, name, Some(current), None))
-        .collect();
-    if !(choices.drop_existing || choices.diff) {
-        return Ok(unset);
-    }
-
-    for conflict in unset {
-        if conflict.resolve(choices)? {
-            drop(target.remove(conflict.name()));
-        }
-    }
-    Ok(Vec::new())
 }
 
 fn table_at<'doc>(root: &'doc mut Table, path: &[&str]) -> Result<&'doc mut Table> {

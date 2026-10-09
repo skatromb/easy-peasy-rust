@@ -1,7 +1,7 @@
 # Public API
 avoid-breaking-exported-api = false # ~20 lints that may ask to break a `pub` API.
 
-# Tests may panic and print. Shipped code stays panic-free
+# Tests may panic and print, shipped code can't
 allow-dbg-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
@@ -9,7 +9,7 @@ allow-panic-in-tests = true
 allow-print-in-tests = true
 allow-unwrap-in-tests = true
 
-# Names, from wemake-python-styleguide WPS1xx
+# Naming
 allowed-idents-below-min-chars = [] # WPS111 allows none either.
 check-inconsistent-struct-field-initializers = true # Struct literals list fields in definition order.
 disallowed-names = [
@@ -21,7 +21,7 @@ disallowed-names = [
 min-ident-chars-threshold = 2 # Stricter than WPS111: flags 2-char names like `id` too.
 upper-case-acronyms-aggressive = true # `XmlParser` over `XMLParser`, `Http` over `HTTP`.
 
-# Complexity thresholds, from wemake-python-styleguide WPS2xx and WPS425
+# Complexity
 cognitive-complexity-threshold = 12 # WPS231.
 excessive-nesting-threshold = 4 # WPS220 is 5.
 max-fn-params-bools = 0 # WPS425: no keyword arguments, so no bool parameters.
@@ -29,7 +29,7 @@ too-many-arguments-threshold = 4 # WPS211 is 5. Clippy counts `self`, so methods
 too-many-lines-threshold = 20 # Stands in for WPS213, 9 expressions.
 type-complexity-threshold = 75 # Depth 3, as WPS234.
 
-# Left at clippy's default:
+# clippy's defaults:
 # - absolute-paths-allowed-crates = []: every crate alike.
 # - absolute-paths-max-segments = 2: `use std::fs;` then `fs::read`, not `std::fs::read`.
 # - accept-comment-above-attributes = true: `unsafe_code` is denied.
