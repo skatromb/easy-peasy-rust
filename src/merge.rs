@@ -67,22 +67,26 @@ fn replace_own(
         block.push(name, manifest.get("lints"), preset);
     }
     if !block.ask(Question::Replace, choices)? {
-        return warn(
-            &changed,
-            "keeps its own lints, so it gets none of the preset",
-        );
+        return warn_kept(&changed);
     }
     if !choices.diff {
-        warn(&changed, "dropped its own lints")?;
+        warn_dropped(&changed)?;
     }
     switch(changed, preset);
     Ok(())
 }
 
-fn warn(manifests: &[Manifest<'_>], what: &str) -> Result<()> {
+fn warn_kept(manifests: &[Manifest<'_>]) -> Result<()> {
+    for (name, _) in manifests {
+        writeln!(stderr(), "warning: {name} keeps its own lints")?;
+    }
+    Ok(())
+}
+
+fn warn_dropped(manifests: &[Manifest<'_>]) -> Result<()> {
     for (name, manifest) in manifests {
         let lints = manifest.get("lints").map(shown).unwrap_or_default();
-        writeln!(stderr(), "warning: {name} {what}: {lints}")?;
+        writeln!(stderr(), "warning: {name} dropped its own lints: {lints}")?;
     }
     Ok(())
 }
