@@ -15,7 +15,7 @@ fn run_on(rust: &str, command: &mut Command, dir: &TempDir) -> Output {
 fn install_and_lint(rust: &str) -> (TempDir, String) {
     let dir = project("crate");
 
-    let install = run_on(rust, Command::new(BIN).args(["easy-peasy", "--yes"]), &dir);
+    let install = run_on(rust, Command::new(BIN).arg("easy-peasy"), &dir);
     let warnings = String::from_utf8(install.stderr).unwrap();
     assert!(install.status.success(), "{warnings}");
 

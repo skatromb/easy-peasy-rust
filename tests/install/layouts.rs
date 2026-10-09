@@ -10,7 +10,7 @@ fn installs_into_a_virtual_workspace_from_a_member() {
     let dir = project("workspace");
 
     let output = Command::new(BIN)
-        .args(["easy-peasy", "-y"])
+        .arg("easy-peasy")
         .current_dir(dir.path().join("crates/one"))
         .output()
         .unwrap();
@@ -33,7 +33,7 @@ fn installs_into_a_virtual_workspace_from_a_member() {
 fn tells_what_a_member_dropped() {
     let dir = project("workspace");
 
-    let output = install(&dir, &["--yes", "--drop-existing"]);
+    let output = install(&dir, &["--drop-existing"]);
 
     let warning = String::from_utf8(output.stderr).unwrap();
     assert!(warning.contains(
@@ -57,7 +57,7 @@ fn lists_every_workspace_member_in_one_block() {
 fn installs_into_a_root_package() {
     let dir = project("root-package");
 
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
 
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.starts_with(&fixture("root-package/Cargo.toml")));
@@ -75,7 +75,7 @@ fn merges_into_a_hidden_clippy_toml() {
     )
     .unwrap();
 
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
 
     assert!(read(&dir, ".clippy.toml").contains("cognitive-complexity-threshold = 12"));
     assert!(!dir.path().join("clippy.toml").exists());
@@ -101,7 +101,7 @@ fn assert_unfolds(folded: &str) {
         .replace("float_arithmetic = \"allow\"\n", "");
     fs::write(dir.path().join("Cargo.toml"), manifest).unwrap();
 
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
 
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("\n[lints.clippy]\n# Nursery and pedantic\n"));
@@ -111,14 +111,14 @@ fn assert_unfolds(folded: &str) {
 #[test]
 fn adds_missing_lints_back_to_their_blocks() {
     let dir = project("crate");
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
     let installed = read(&dir, "Cargo.toml");
     let without = installed
         .replace("ffi_unwind_calls = \"warn\"\n", "")
         .replace("let_underscore_drop = \"warn\"\n", "");
     fs::write(dir.path().join("Cargo.toml"), without).unwrap();
 
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
 
     assert_eq!(read(&dir, "Cargo.toml"), installed);
 }
@@ -126,9 +126,9 @@ fn adds_missing_lints_back_to_their_blocks() {
 #[test]
 fn second_run_changes_nothing() {
     let dir = project("workspace");
-    assert!(install(&dir, &["-y"]).status.success());
+    assert!(install(&dir, &[]).status.success());
 
-    let output = install(&dir, &["-y"]);
+    let output = install(&dir, &[]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(!stdout.contains("Created") && !stdout.contains("Updated"));

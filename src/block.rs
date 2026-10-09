@@ -134,7 +134,7 @@ impl Block {
         if self.changes.is_empty() {
             return Ok(false);
         }
-        if choices.yes {
+        if !choices.interactive && !choices.diff {
             return self.summarize(question, choices);
         }
 

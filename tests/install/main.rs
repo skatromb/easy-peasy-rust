@@ -51,9 +51,11 @@ fn install(dir: &TempDir, flags: &[&str]) -> Output {
         .unwrap()
 }
 
-fn ask(dir: &TempDir, flags: &[&str]) -> PtySession {
+fn ask(dir: &TempDir) -> PtySession {
     let mut command = Command::new(BIN);
-    let _ = command.arg("easy-peasy").arg(dir.path()).args(flags);
+    let _ = command
+        .args(["easy-peasy", "--interactive"])
+        .arg(dir.path());
     spawn_command(command, Some(30_000)).unwrap()
 }
 

@@ -35,14 +35,14 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Add what the preset sets and you lack, without asking. Keeps your own settings.
-    #[arg(short = 'y', long)]
-    yes: bool,
-    /// Default to replacing and removing your own settings. With `--yes`, applies the whole preset.
+    /// Ask about each block of lint rules that differs.
+    #[arg(short, long)]
+    interactive: bool,
+    /// Replace and remove your own settings. With `--interactive`, only the default answer.
     #[arg(long)]
     drop_existing: bool,
     /// Print the diff from the preset and fail on any, without writing anything.
-    #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
+    #[arg(long, conflicts_with_all = ["interactive", "drop_existing"])]
     diff: bool,
 }
 
@@ -50,15 +50,9 @@ fn main() -> Result<()> {
     let Cargo::EasyPeasy(cli_args) = Cargo::parse();
     let choices = cli_args.choices;
 
-    ensure!(
-        choices.diff || choices.yes || stdin().is_terminal(),
-        "Use `--yes` for a non-interactive run, or `--diff` to only look"
-    );
-    if !choices.diff && !choices.yes {
-        writeln!(
-            stdout(),
-            "Press Enter for the default answer, or rerun with `--yes` to take all defaults without asking.\n"
-        )?;
+    if choices.interactive {
+        ensure!(stdin().is_terminal(), "`--interactive` needs a terminal");
+        writeln!(stdout(), "Press Enter for the default answer.\n")?;
     }
 
     let files = merged(&cli_args.path, choices)?;

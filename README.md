@@ -8,11 +8,10 @@ Run it inside a workspace or a single crate, or pass the path.
 
 ```sh
 cargo install easy-peasy-rust
-cargo easy-peasy --yes --drop-existing  # apply the whole preset without asking, drop your lint settings
-cargo easy-peasy --yes   # add what you lack without asking, keep your lints
-
-cargo easy-peasy [path]  # asks about each block of lint rules that differs
-cargo easy-peasy --diff  # print the diff from `easy-peasy-rust` and fail on any, don't write anything
+cargo easy-peasy [path]          # add what you lack, keep your lints
+cargo easy-peasy --drop-existing  # apply the whole preset, drop your lint settings
+cargo easy-peasy --interactive    # ask about each block of lint rules that differs
+cargo easy-peasy --diff           # print the diff from `easy-peasy-rust` and fail on any, don't write anything
 ```
 
 Then use your IDE as usual or run clippy manually:
