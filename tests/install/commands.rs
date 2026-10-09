@@ -58,7 +58,7 @@ fn takes_the_preset_and_keeps_your_other_lints_with_yes() {
     assert!(stderr.contains("clippy::dbg_macro: yours \"allow\", preset not set\n"));
     assert!(stderr.contains("--drop-existing"));
     let cargo_toml = read(&dir, "Cargo.toml");
-    assert!(cargo_toml.contains("unwrap_used = \"deny\" # Panics.\n"));
+    assert!(cargo_toml.contains("unwrap_used = \"deny\"\n"));
     assert!(cargo_toml.contains("dbg_macro = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
