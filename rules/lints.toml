@@ -51,10 +51,6 @@ nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
 pedantic = { level = "warn", priority = -1 } # Strict but sound.
 redundant_pub_crate = "allow" # Contradicts rustc `unreachable_pub`.
 
-# Restriction
-blanket_clippy_restriction_lints = "allow" # `restriction` is on as a whole on purpose.
-restriction = { level = "warn", priority = -1 } # All on, then allow what does not fit, below.
-
 # Cargo
 cargo = { level = "warn", priority = -1 } # `*` versions, odd feature names.
 cargo_common_metadata = "allow" # Fires on private crates too, unless `publish = false`.
@@ -63,8 +59,10 @@ multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot
 # No panics
 arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
 cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
+exit = "warn" # Skips destructors. Return from `main`.
 expect_used = "deny" # Panics.
 indexing_slicing = "deny" # Panics out of bounds. Use `get`.
+missing_assert_message = "warn" # A failed assert says why.
 panic = "deny" # Panics.
 panic_in_result_fn = "deny" # A `Result` fn must not also panic.
 string_slice = "deny" # Panics off a `char` boundary.
@@ -72,42 +70,147 @@ todo = "deny" # Unfinished code must not ship.
 unchecked_time_subtraction = "deny" # Panics on underflow. Use `checked_sub`.
 unimplemented = "deny" # Unfinished code must not ship.
 unreachable = "deny" # Panics.
+unwrap_in_result = "warn" # A `Result` fn returns its errors.
 unwrap_used = "deny" # Panics.
 
-# Contradicting lints
-assertions_on_result_states = "allow" # Its fix, `unwrap()`, is denied.
-big_endian_bytes = "allow" # Excludes `little_` and `host_endian_bytes`. Picks network order.
-implicit_return = "allow" # Contradicts `needless_return`.
-let_underscore_must_use = "allow" # `let _ =` is how `unused_results` wants a result dropped.
+# Explicit numbers and casts
+as_conversions = "warn" # `as` truncates silently. Use `From` or `TryFrom`.
+as_pointer_underscore = "warn" # Name the pointer type.
+as_underscore = "warn" # Name the target type.
+decimal_literal_representation = "warn" # Big bit patterns read better in hex.
+float_cmp_const = "warn" # Floats compare with a tolerance.
+fn_to_numeric_cast_any = "warn" # A function pointer is not a number.
+host_endian_bytes = "warn" # Byte order differs per machine.
+integer_division = "warn" # Drops the remainder silently.
+little_endian_bytes = "warn" # Big endian, the network order, is the pick.
+lossy_float_literal = "warn" # The float does not hold the written value.
+modulo_arithmetic = "warn" # `%` keeps the sign of the left side.
+non_zero_suggestions = "warn" # `NonZero::from` over a checked conversion.
+precedence_bits = "warn" # Parenthesize shifts mixed with masks.
+suspicious_xor_used_as_pow = "warn" # `2 ^ 8` is XOR, not power.
+
+# Documented unsafe
+default_union_representation = "warn" # A union without `#[repr(C)]` has no defined layout.
+inline_asm_x86_att_syntax = "warn" # Intel syntax, the `asm!` default.
+mem_forget = "warn" # Leaks what `Drop` would free.
+multiple_unsafe_ops_per_block = "warn" # One `SAFETY:` reason per operation.
+undocumented_unsafe_blocks = "warn" # Every `unsafe` block says why it is sound.
+unnecessary_safety_comment = "warn" # No `SAFETY:` on safe code.
+unnecessary_safety_doc = "warn" # No `# Safety` docs on safe functions.
+
+# No debug output
+dbg_macro = "warn" # Debugging leftover.
+pointer_format = "warn" # Addresses differ per run.
+print_stderr = "warn" # Return the error or log it.
+print_stdout = "warn" # Write to a handle, like `stdout().lock()`.
+use_debug = "warn" # `{:?}` is for developers, not users.
+
+# Handled errors
+map_err_ignore = "warn" # Keep the source error.
+try_err = "warn" # `return Err(e)` over `Err(e)?`.
+unused_result_ok = "warn" # `.ok()` hides a dropped `Result`. Use `let _ =`.
+
+# Naming
+disallowed_script_idents = "warn" # Latin names only, see clippy.toml.
+error_impl_error = "warn" # A public `Error` type clashes with `std::error::Error`.
+min_ident_chars = "warn" # WPS111. Threshold in clippy.toml.
+module_name_repetitions = "warn" # `parser::ParserError` says parser twice.
+redundant_test_prefix = "warn" # `#[test] fn test_x` says test twice.
+renamed_function_params = "warn" # Trait impls keep the trait's parameter names.
+same_name_method = "warn" # An inherent method hides a trait method.
+shadow_reuse = "warn" # A new value gets a new name.
+shadow_same = "warn" # Same.
+shadow_unrelated = "warn" # Same.
+single_char_lifetime_names = "warn" # `'input` over `'a`.
+
+# Modules and imports
+absolute_paths = "warn" # `use` it, then call it by its short name.
+alloc_instead_of_core = "warn" # `core` over `alloc` for what it has.
+cfg_not_test = "warn" # Tests run the shipped code.
+definition_in_module_root = "warn" # Definitions go in named files, not `mod.rs`.
+field_scoped_visibility_modifiers = "warn" # A field is public or private.
+inline_modules = "warn" # One module per file.
 mod_module_files = "deny" # `foo.rs` over `foo/mod.rs`.
-pub_with_shorthand = "allow" # Opposite of `pub_without_shorthand`. Picks `pub(super)`.
-self_named_module_files = "allow" # Opposite of `mod_module_files`.
-semicolon_outside_block = "allow" # Opposite of `semicolon_inside_block`. Picks `;` inside: temporaries drop at once.
-separated_literal_suffix = "allow" # Opposite of `unseparated_literal_suffix`. Picks `1_u32`.
+multiple_inherent_impl = "warn" # One `impl` block per type.
+partial_pub_fields = "warn" # All fields public, or none.
+pub_without_shorthand = "warn" # `pub(super)` over `pub(in super)`.
+tests_outside_test_module = "warn" # Tests live in a `tests` module.
+unnecessary_self_imports = "warn" # `use a::b` over `use a::b::{self}`.
+unused_trait_names = "warn" # `use Trait as _` when only its methods are used.
 
-# Idiomatic Rust
-arbitrary_source_item_ordering = "allow" # Sorts by name. Code reads better top-down.
-impl_trait_in_params = "allow" # Bans `impl Trait` arguments.
-missing_trait_methods = "allow" # Defeats default methods.
-pattern_type_mismatch = "allow" # Fights match ergonomics.
-pub_use = "allow" # Re-exports shape a public API.
-question_mark_used = "allow" # Bans `?`.
-rest_pattern_accessible_field = "allow" # `..` in patterns is fine.
-single_call_fn = "allow" # Small named functions are often called once.
+# Explicit control flow and patterns
+cognitive_complexity = "warn" # WPS231. Threshold in clippy.toml.
+else_if_without_else = "warn" # The last case is handled explicitly.
+infinite_loop = "warn" # A `loop` that never breaks returns `!`.
+mixed_read_write_in_expression = "warn" # Evaluation order must not matter.
+ref_patterns = "warn" # Match ergonomics over `ref`.
+rest_pat_in_fully_bound_structs = "warn" # `..` after every field is bound.
+unnecessary_rest_pattern = "warn" # Same.
+unneeded_field_pattern = "warn" # `..` over `field: _`.
+wildcard_enum_match_arm = "warn" # A new variant must break the match.
 
-# Noise
-clone_on_ref_ptr = "allow" # `Rc::clone(&x)` over `x.clone()`.
-default_numeric_fallback = "allow" # A suffix on every literal.
-inline_trait_bounds = "allow" # `where` for every bound.
-let_underscore_untyped = "allow" # `let _: T =` everywhere.
-missing_docs_in_private_items = "allow" # rustc `missing_docs` covers the public API.
-missing_inline_in_public_items = "allow" # Premature optimisation.
-non_ascii_literal = "allow" # Text is Unicode. `non_ascii_idents` guards names.
+# Idiomatic std
+create_dir = "warn" # `create_dir_all` makes the parents too.
+deref_by_slicing = "warn" # `&*v` over `&v[..]`.
+filetype_is_file = "warn" # `!is_dir()` also covers symlinks and devices.
+if_then_some_else_none = "warn" # `bool::then` over `if c { Some(x) } else { None }`.
+iter_over_hash_type = "warn" # Hash order changes per run.
+map_with_unused_argument_over_ranges = "warn" # `repeat_n` over `(0..n).map(|_| x)`.
+mutex_atomic = "warn" # An atomic is cheaper.
+mutex_integer = "warn" # Same.
+needless_raw_strings = "warn" # `r"..."` without anything to escape.
+pathbuf_init_then_push = "warn" # `PathBuf::from(a).join(b)`.
+rc_buffer = "warn" # `Rc<str>` over `Rc<String>`.
+rc_mutex = "warn" # `Rc<RefCell<T>>` for one thread.
+return_and_then = "warn" # `?` over a returned `and_then`.
+str_to_string = "warn" # `to_owned()` on `&str`.
+string_add = "warn" # `push_str` over `+`.
+string_lit_chars_any = "warn" # `matches!` over `"abc".chars().any(..)`.
+verbose_file_reads = "warn" # `fs::read_to_string` over opening and reading.
 
-# Niche
-exhaustive_enums = "allow" # `#[non_exhaustive]` matters for library semver only.
-exhaustive_structs = "allow" # Same.
-float_arithmetic = "allow" # Bans float math.
-integer_division_remainder_used = "allow" # For constant-time crypto.
-std_instead_of_alloc = "allow" # For `no_std`.
-std_instead_of_core = "allow" # For `no_std`.
+# Consistent style
+allow_attributes = "warn" # `#[expect]` over `#[allow]`: it says when the lint stops firing.
+allow_attributes_without_reason = "warn" # Every `#[expect]` says why.
+doc_include_without_cfg = "warn" # `#[cfg_attr(doc, doc = include_str!(..))]` keeps it out of the binary.
+doc_paragraphs_missing_punctuation = "warn" # Doc sentences end with a period.
+empty_drop = "warn" # An empty `Drop` only blocks moves out of the type.
+empty_enum_variants_with_brackets = "warn" # `A` over `A()`.
+empty_structs_with_brackets = "warn" # `struct A;` over `struct A {}`.
+large_include_file = "warn" # Threshold in clippy.toml.
+redundant_type_annotations = "warn" # `let x: String = String::new()`.
+semicolon_inside_block = "warn" # `{ x; }`: temporaries drop at once.
+unseparated_literal_suffix = "warn" # `1_u32` over `1u32`.
+
+# Restriction lints left at clippy's default:
+# - arbitrary_source_item_ordering = "allow": sorts by name, code reads better top-down.
+# - assertions_on_result_states = "allow": its fix, `unwrap()`, is denied.
+# - big_endian_bytes = "allow": big endian, the network order, is the pick.
+# - clone_on_ref_ptr = "allow": `Rc::clone(&x)` over `x.clone()` is noise.
+# - default_numeric_fallback = "allow": a suffix on every literal.
+# - exhaustive_enums = "allow": `#[non_exhaustive]` matters for library semver only.
+# - exhaustive_structs = "allow": same.
+# - float_arithmetic = "allow": bans float math.
+# - get_unwrap = "allow": its fix, indexing, is denied, and `unwrap_used` flags it anyway.
+# - impl_trait_in_params = "allow": bans `impl Trait` arguments.
+# - implicit_return = "allow": contradicts `needless_return`.
+# - inline_asm_x86_intel_syntax = "allow": opposite of `inline_asm_x86_att_syntax`.
+# - inline_trait_bounds = "allow": `where` for every bound.
+# - integer_division_remainder_used = "allow": for constant-time crypto.
+# - let_underscore_must_use = "allow": `let _ =` is how `unused_results` wants a result dropped.
+# - let_underscore_untyped = "allow": `let _: T =` everywhere.
+# - missing_asserts_for_indexing = "allow": indexing is denied.
+# - missing_docs_in_private_items = "allow": rustc `missing_docs` covers the public API.
+# - missing_inline_in_public_items = "allow": premature optimisation.
+# - missing_trait_methods = "allow": defeats default methods.
+# - non_ascii_literal = "allow": text is Unicode, `non_ascii_idents` guards names.
+# - pattern_type_mismatch = "allow": fights match ergonomics.
+# - pub_use = "allow": re-exports shape a public API.
+# - pub_with_shorthand = "allow": opposite of `pub_without_shorthand`.
+# - question_mark_used = "allow": bans `?`.
+# - rest_pattern_accessible_field = "allow": `..` in patterns is fine.
+# - self_named_module_files = "allow": opposite of `mod_module_files`.
+# - semicolon_outside_block = "allow": opposite of `semicolon_inside_block`.
+# - separated_literal_suffix = "allow": opposite of `unseparated_literal_suffix`.
+# - single_call_fn = "allow": small named functions are often called once.
+# - std_instead_of_alloc = "allow": for `no_std`.
+# - std_instead_of_core = "allow": for `no_std`.

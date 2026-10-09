@@ -10,6 +10,7 @@ const PRESETS: [&str; 2] = [
     include_str!("../rules/clippy.toml"),
 ];
 const VALIDITY: &str = include_str!("../rules/validity.toml");
+const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 
 #[test]
 fn validity_lists_exactly_the_preset_entries() {
@@ -36,6 +37,28 @@ fn entries(document: &DocumentMut) -> BTreeSet<String> {
             names.map(move |(name, _)| format!("{section}.{name}"))
         })
         .collect()
+}
+
+#[test]
+fn decides_every_restriction_lint() {
+    let (_, clippy) = PRESETS[0].split_once("[clippy]").unwrap();
+    let decided: BTreeSet<&str> = clippy.lines().filter_map(name).collect();
+    let left_out: BTreeSet<&str> = clippy
+        .lines()
+        .filter(|line| line.starts_with("# - "))
+        .filter_map(name)
+        .collect();
+    let restriction: BTreeSet<&str> = RESTRICTION
+        .lines()
+        .filter_map(|line| line.strip_prefix("| [`")?.split('`').next())
+        .collect();
+
+    let undecided: Vec<&&str> = restriction.difference(&decided).collect();
+    let stale: Vec<&&str> = left_out.difference(&restriction).collect();
+    assert!(
+        undecided.is_empty() && stale.is_empty(),
+        "undecided: {undecided:?}, stale: {stale:?}"
+    );
 }
 
 #[test]
