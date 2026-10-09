@@ -110,9 +110,7 @@ fn adds_the_preset_and_keeps_yours_by_default() {
     assert!(stdout.contains("\n\nCargo.toml\n  "));
     assert!(stdout.contains("\n  Added No panics: "));
     assert!(stdout.contains("\n  Kept No panics: clippy::unwrap_used\n"));
-    assert!(stdout.contains(
-        "\n  Kept Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"
-    ));
+    assert!(stdout.contains("\n  Kept Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
     assert!(cargo_toml.contains("\n\n# No panics\narithmetic_side_effects = \"deny\"\n"));
@@ -132,9 +130,7 @@ fn applies_the_whole_preset_with_drop_existing() {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("\n  Replaced No panics: clippy::unwrap_used\n"));
-    assert!(stdout.contains(
-        "\n  Removed Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"
-    ));
+    assert!(stdout.contains("\n  Removed Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
     let diff = install(&dir, &["--diff"]);
     assert_eq!(String::from_utf8(diff.stdout).unwrap(), MATCHING);

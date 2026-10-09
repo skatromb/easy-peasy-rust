@@ -147,8 +147,8 @@ impl Block {
 
     fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {
         let what = match question {
-            Question::Adopt => self.kind.count(self.changes.len()),
-            Question::Replace | Question::Remove => {
+            Question::Adopt | Question::Remove => self.kind.count(self.changes.len()),
+            Question::Replace => {
                 let labels: Vec<&str> = self
                     .changes
                     .iter()
