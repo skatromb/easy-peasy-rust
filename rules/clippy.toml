@@ -1,7 +1,7 @@
 # easy-peasy: Public API
 avoid-breaking-exported-api = false # ~20 lints that may ask to break a `pub` API.
 
-# easy-peasy: Tests may panic and print, shipped code can't
+# easy-peasy: Tests may panic and print
 allow-dbg-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
