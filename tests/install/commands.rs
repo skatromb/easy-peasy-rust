@@ -2,6 +2,8 @@ use rexpect::session::PtySession;
 
 use super::{ask, clippy_is_silent, fixture, install, project, read};
 
+const MATCHING: &str = "clippy.toml\n  Matches the preset\n\nCargo.toml\n  Matches the preset\n\nYour settings match the preset\n";
+
 #[test]
 fn refuses_to_ask_without_a_terminal() {
     let dir = project("crate");
@@ -65,7 +67,7 @@ fn matches_the_preset_after_yes_to_everything() {
     assert!(!cargo_toml.contains("float_arithmetic"));
     assert!(cargo_toml.contains("broken_intra_doc_links"));
     let diff = install(&dir, &["--diff"]);
-    assert_eq!(diff.stdout, b"Your settings match the preset\n");
+    assert_eq!(String::from_utf8(diff.stdout).unwrap(), MATCHING);
 }
 
 #[test]
@@ -105,12 +107,10 @@ fn adds_the_preset_and_keeps_yours_by_default() {
     let output = install(&dir, &[]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("       Added No panics: "));
-    assert!(stdout.contains("        Kept No panics: clippy::unwrap_used\n"));
-    assert!(stdout.contains(
-        "        Kept Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"
-    ));
-    assert!(!stdout.contains("[Y/n]"));
+    assert!(stdout.contains("\n\nCargo.toml\n  "));
+    assert!(stdout.contains("\n  Added No panics: "));
+    assert!(stdout.contains("\n  Kept No panics: clippy::unwrap_used\n"));
+    assert!(stdout.contains("\n  Kept Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
     assert!(cargo_toml.contains("\n\n# No panics\narithmetic_side_effects = \"deny\"\n"));
@@ -129,13 +129,11 @@ fn applies_the_whole_preset_with_drop_existing() {
     let output = install(&dir, &["--drop-existing"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("    Replaced No panics: clippy::unwrap_used\n"));
-    assert!(stdout.contains(
-        "     Removed Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"
-    ));
+    assert!(stdout.contains("\n  Replaced No panics: clippy::unwrap_used\n"));
+    assert!(stdout.contains("\n  Removed Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
     let diff = install(&dir, &["--diff"]);
-    assert_eq!(diff.stdout, b"Your settings match the preset\n");
+    assert_eq!(String::from_utf8(diff.stdout).unwrap(), MATCHING);
 }
 
 fn answer(mut session: PtySession, reply: &str) -> Vec<String> {

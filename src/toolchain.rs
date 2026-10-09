@@ -39,7 +39,8 @@ impl Toolchain {
         skipped
     }
 
-    pub(crate) fn warn_skipped(&self, skipped: &[String]) -> Result<()> {
+    pub(crate) fn warn_skipped(&self, mut skipped: Vec<String>) -> Result<()> {
+        skipped.sort();
         if !self.reads_lints() {
             warn(format_args!(
                 "skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
