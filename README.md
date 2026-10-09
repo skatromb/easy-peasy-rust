@@ -31,7 +31,7 @@ Every lint pick is explained in [`lints.toml`](rules/lints.toml) and [`clippy.to
 
 - `[workspace.lints.rust]` and `[workspace.lints.clippy]` into the root `Cargo.toml` (`[lints.*]` for a single crate),
 - `[lints] workspace = true` into every member crate, the root package included,
-- the thresholds into `clippy.toml`, or into `.clippy.toml` if that is what you have.
+- the settings into `clippy.toml`, or into `.clippy.toml` if that is what you have.
 
 Lints of other tools, like `[lints.rustdoc]`, and `clippy.toml` settings the preset does not set are never touched.
 

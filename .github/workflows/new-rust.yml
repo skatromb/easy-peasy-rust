@@ -31,6 +31,7 @@ jobs:
 
           - [ ] Add the new rustc lints worth having from the [Rust changelog](https://doc.rust-lang.org/stable/releases.html)
           - [ ] Allow the new clippy lints from the diff below that do not fit
+          - [ ] Add every new preset entry to `rules/validity.toml` with the new Rust version
           - [ ] Mirror `rules/lints.toml` into `Cargo.toml` with `make dogfood` and bump its `version`, e.g. to `1.100.0`
           - [ ] After merging, tag and publish: `make release`
           EOF

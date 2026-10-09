@@ -34,13 +34,13 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Silently take the preset's value on every conflict.
+    /// Apply the preset without asking.
     #[arg(short = 'y', long)]
     yes: bool,
     /// Drop the lints the preset does not set.
     #[arg(long)]
     drop_existing: bool,
-    /// Show the diff from preset, without writing rules.
+    /// Print the diff from the preset, without writing anything.
     #[arg(long, conflicts_with_all = ["yes", "drop_existing"])]
     diff: bool,
 }
