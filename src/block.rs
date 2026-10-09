@@ -1,10 +1,14 @@
 use std::fmt::Display;
 use std::io::{Write, stderr, stdin, stdout};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Result;
 use toml_edit::Item;
 
 use crate::Choices;
+use crate::toml_file::TomlFile;
+
+static QUIET: AtomicBool = AtomicBool::new(true);
 
 #[derive(Clone, Copy)]
 pub(crate) enum Kind {
@@ -123,22 +127,22 @@ impl Block {
         if self.changes.is_empty() {
             return Ok(false);
         }
+        QUIET.store(false, Ordering::Relaxed);
         if !choices.interactive && !choices.diff {
             return self.summarize(question, choices);
         }
 
         let mut out = stdout().lock();
+        writeln!(out)?;
         if !self.shown {
-            writeln!(out, "{}\n{}\n", self.title, self.kind.docs())?;
+            writeln!(out, "  {}\n  {}\n", self.title, self.kind.docs())?;
             self.shown = true;
         }
         for Change { label, detail } in self.changes.drain(..) {
-            writeln!(out, "  {label}: {detail}")?;
+            writeln!(out, "    {label}: {detail}")?;
         }
 
-        let answer = choices.diff || answer(&mut out, question, choices)?;
-        writeln!(out)?;
-        Ok(answer)
+        Ok(choices.diff || answer(&mut out, question, choices)?)
     }
 
     fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {
@@ -155,14 +159,28 @@ impl Block {
         };
         self.changes.clear();
         let verb = question.verb(choices);
-        writeln!(stdout(), "{verb:>12} {}: {what}", self.title)?;
+        writeln!(stdout(), "  {verb} {}: {what}", self.title)?;
         Ok(question.default(choices))
     }
 }
 
+pub(crate) fn section<T>(
+    file: &mut TomlFile,
+    merge: impl FnOnce(&mut TomlFile) -> Result<T>,
+) -> Result<T> {
+    writeln!(stdout(), "{}", file.name())?;
+    QUIET.store(true, Ordering::Relaxed);
+    let merged = merge(file)?;
+    if QUIET.load(Ordering::Relaxed) {
+        writeln!(stdout(), "  Matches the preset")?;
+    }
+    writeln!(stdout())?;
+    Ok(merged)
+}
+
 fn answer(out: &mut impl Write, question: Question, choices: Choices) -> Result<bool> {
     loop {
-        write!(out, "{} ", question.prompt(choices))?;
+        write!(out, "  {} ", question.prompt(choices))?;
         out.flush()?;
         let line = stdin().lines().next().transpose()?.unwrap_or_default();
         match line.trim().to_ascii_lowercase().as_str() {

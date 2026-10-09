@@ -84,20 +84,24 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
     let toolchain = Toolchain::detect(workspace.root())?;
     let mut clippy_toml = workspace.clippy_toml()?;
-    let mut skipped = merge::settings(clippy_toml.doc_mut(), choices, &toolchain)?;
+    let mut skipped = block::section(&mut clippy_toml, |file| {
+        merge::settings(file.doc_mut(), choices, &toolchain)
+    })?;
     let mut files = vec![clippy_toml];
 
     if toolchain.reads_lints() {
         let mut cargo_toml = workspace.cargo_toml()?;
-        skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &toolchain)?);
         let mut members = workspace.members()?;
-        inheritance::merge(&mut cargo_toml, &mut members, choices)?;
+        skipped.extend(block::section(&mut cargo_toml, |file| {
+            let lints = merge::lints(file.doc_mut(), choices, &toolchain)?;
+            inheritance::merge(file, &mut members, choices)?;
+            Ok(lints)
+        })?);
         files.push(cargo_toml);
         files.extend(members);
     }
 
-    skipped.sort();
-    toolchain.warn_skipped(&skipped)?;
+    toolchain.warn_skipped(skipped)?;
 
     Ok(files)
 }

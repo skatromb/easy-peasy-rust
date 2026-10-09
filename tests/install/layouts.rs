@@ -49,8 +49,8 @@ fn lists_every_workspace_member_in_one_block() {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout.matches("Workspace lints").count(), 1);
-    assert!(stdout.contains("\n  crates/one/Cargo.toml: { workspace = true }\n"));
-    assert!(stdout.contains("\n  crates/two/Cargo.toml: { clippy = { unwrap_used = \"allow\" } } → { workspace = true }\n"));
+    assert!(stdout.contains("\n    crates/one/Cargo.toml: { workspace = true }\n"));
+    assert!(stdout.contains("\n    crates/two/Cargo.toml: { clippy = { unwrap_used = \"allow\" } } → { workspace = true }\n"));
 }
 
 #[test]
@@ -127,9 +127,11 @@ fn adds_missing_lints_back_to_their_blocks() {
 fn second_run_changes_nothing() {
     let dir = project("workspace");
     assert!(install(&dir, &[]).status.success());
+    let installed = read(&dir, "Cargo.toml");
 
     let output = install(&dir, &[]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(!stdout.contains("Created") && !stdout.contains("Updated"));
+    assert!(stdout.starts_with("clippy.toml\n  Matches the preset\n\nCargo.toml\n"));
+    assert_eq!(read(&dir, "Cargo.toml"), installed);
 }
