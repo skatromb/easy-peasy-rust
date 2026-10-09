@@ -68,12 +68,12 @@ fn remove(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> R
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    let rules: Vec<_> = keyed(preset).collect();
+    let wanted: Vec<_> = rules(preset).collect();
     let existing = target.iter().map(|(name, _)| name.to_owned()).collect();
-    rules
+    wanted
         .chunk_by(|_, &(key, _)| header(key).is_none())
         .try_for_each(|block| adopt(target, block, kind, choices))?;
-    arrange(target, &rules, existing);
+    arrange(target, &wanted, existing);
     Ok(())
 }
 
@@ -151,7 +151,7 @@ fn header(key: &Key) -> Option<&str> {
         .find_map(|line| line.strip_prefix("# "))
 }
 
-fn keyed(table: &Table) -> impl Iterator<Item = Rule<'_>> {
+fn rules(table: &Table) -> impl Iterator<Item = Rule<'_>> {
     table
         .iter()
         .filter_map(|(name, _)| table.get_key_value(name))
