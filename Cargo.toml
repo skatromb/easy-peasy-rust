@@ -1,6 +1,6 @@
 [package]
 name = "easy-peasy-rust"
-version = "1.99.1"
+version = "1.99.2"
 edition = "2024"
 rust-version = "1.91"
 description = "Opinionated clippy and rustc lint preset in the spirit of wemake-python-styleguide"
@@ -23,6 +23,45 @@ toml_edit = "0.25.15"
 [dev-dependencies]
 rexpect = "0.7.1"
 tempfile = "3.27.0"
+
+[lints.rust]
+# Safety
+ffi_unwind_calls = "warn"
+raw_borrows_via_references = "warn"
+unsafe_code = "deny"
+
+# Hidden behaviour
+ambiguous_negative_literals = "warn"
+deref_into_dyn_supertrait = "warn"
+let_underscore_drop = "warn"
+meta_variable_misuse = "warn"
+non_ascii_idents = "warn"
+unstable_features = "warn"
+unused_results = "warn"
+variant_size_differences = "warn"
+
+# Public API
+missing_copy_implementations = "warn"
+missing_docs = "warn"
+unnameable_types = "warn"
+unreachable_pub = "warn"
+
+# Dead code
+closure_returning_async_block = "warn"
+explicit_outlives_requirements = "warn"
+impl_trait_redundant_captures = "warn"
+macro_use_extern_crate = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+single_use_lifetimes = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unit_bindings = "warn"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
 
 [lints.clippy]
 # Everything on, then allow what does not fit
@@ -88,42 +127,3 @@ float_arithmetic = "allow"
 integer_division_remainder_used = "allow"
 std_instead_of_alloc = "allow"
 std_instead_of_core = "allow"
-
-[lints.rust]
-# Safety
-ffi_unwind_calls = "warn"
-raw_borrows_via_references = "warn"
-unsafe_code = "deny"
-
-# Hidden behaviour
-ambiguous_negative_literals = "warn"
-deref_into_dyn_supertrait = "warn"
-let_underscore_drop = "warn"
-meta_variable_misuse = "warn"
-non_ascii_idents = "warn"
-unstable_features = "warn"
-unused_results = "warn"
-variant_size_differences = "warn"
-
-# Public API
-missing_copy_implementations = "warn"
-missing_docs = "warn"
-unnameable_types = "warn"
-unreachable_pub = "warn"
-
-# Dead code
-closure_returning_async_block = "warn"
-explicit_outlives_requirements = "warn"
-impl_trait_redundant_captures = "warn"
-macro_use_extern_crate = "warn"
-redundant_imports = "warn"
-redundant_lifetimes = "warn"
-single_use_lifetimes = "warn"
-trivial_casts = "warn"
-trivial_numeric_casts = "warn"
-unit_bindings = "warn"
-unused_extern_crates = "warn"
-unused_import_braces = "warn"
-unused_lifetimes = "warn"
-unused_macro_rules = "warn"
-unused_qualifications = "warn"

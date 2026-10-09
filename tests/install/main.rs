@@ -3,6 +3,7 @@
 
 mod commands;
 mod layouts;
+mod toolchains;
 
 use std::fs;
 use std::path::Path;

@@ -1,3 +1,50 @@
+[rust]
+# Safety
+ffi_unwind_calls = "warn" # Unwinding across FFI.
+raw_borrows_via_references = "warn" # `&raw const x` over `&x as *const _`.
+unsafe_code = "deny" # Safe Rust only.
+
+# Hidden behaviour
+ambiguous_negative_literals = "warn" # `-1.abs()` is `-(1.abs())`.
+deref_into_dyn_supertrait = "warn" # Trait upcasting shadows the `Deref`.
+let_underscore_drop = "warn" # `let _ = guard` drops it at once.
+meta_variable_misuse = "warn" # Broken macro variables.
+non_ascii_idents = "warn" # Lookalike names.
+unstable_features = "warn" # Stable Rust only.
+unused_results = "warn" # Use a result or drop it with `let _ =`.
+variant_size_differences = "warn" # One big variant bloats every value.
+
+# Public API
+missing_copy_implementations = "warn" # Small plain types should be `Copy`.
+missing_docs = "warn" # Document the public API. `deny` would break `cargo build`.
+unnameable_types = "warn" # A public type users cannot name.
+unreachable_pub = "warn" # Say `pub(crate)` when it is not exported.
+
+# Dead code
+closure_returning_async_block = "warn" # An async closure does it.
+explicit_outlives_requirements = "warn" # Inferred anyway.
+impl_trait_redundant_captures = "warn" # `use<..>` that changes nothing.
+macro_use_extern_crate = "warn" # Legacy macro import.
+redundant_imports = "warn" # Already in scope.
+redundant_lifetimes = "warn" # Equal to another lifetime.
+single_use_lifetimes = "warn" # `'_` would do.
+trivial_casts = "warn" # A cast that does nothing.
+trivial_numeric_casts = "warn" # Same, for numbers.
+unit_bindings = "warn" # `let x = ();`.
+unused_extern_crates = "warn" # Unused.
+unused_import_braces = "warn" # `use a::{b}`.
+unused_lifetimes = "warn" # Unused.
+unused_macro_rules = "warn" # Unused macro arms.
+unused_qualifications = "warn" # `a::b` where `b` is in scope.
+
+# Left at rustc's default, besides edition migrations that `cargo fix --edition` turns on:
+# - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
+# - deprecated_in_future = "allow": for std's own deprecations.
+# - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
+# - linker_info = "allow": harmless linker chatter, like `ld: ignoring duplicate libraries`.
+# - missing_debug_implementations = "allow": `Debug` on every public type.
+# - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.
+
 [clippy]
 # Everything on, then allow what does not fit
 nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
@@ -62,50 +109,3 @@ float_arithmetic = "allow" # Bans float math.
 integer_division_remainder_used = "allow" # For constant-time crypto.
 std_instead_of_alloc = "allow" # For `no_std`.
 std_instead_of_core = "allow" # For `no_std`.
-
-[rust]
-# Safety
-ffi_unwind_calls = "warn" # Unwinding across FFI.
-raw_borrows_via_references = "warn" # `&raw const x` over `&x as *const _`.
-unsafe_code = "deny" # Safe Rust only.
-
-# Hidden behaviour
-ambiguous_negative_literals = "warn" # `-1.abs()` is `-(1.abs())`.
-deref_into_dyn_supertrait = "warn" # Trait upcasting shadows the `Deref`.
-let_underscore_drop = "warn" # `let _ = guard` drops it at once.
-meta_variable_misuse = "warn" # Broken macro variables.
-non_ascii_idents = "warn" # Lookalike names.
-unstable_features = "warn" # Stable Rust only.
-unused_results = "warn" # Use a result or drop it with `let _ =`.
-variant_size_differences = "warn" # One big variant bloats every value.
-
-# Public API
-missing_copy_implementations = "warn" # Small plain types should be `Copy`.
-missing_docs = "warn" # Document the public API. `deny` would break `cargo build`.
-unnameable_types = "warn" # A public type users cannot name.
-unreachable_pub = "warn" # Say `pub(crate)` when it is not exported.
-
-# Dead code
-closure_returning_async_block = "warn" # An async closure does it.
-explicit_outlives_requirements = "warn" # Inferred anyway.
-impl_trait_redundant_captures = "warn" # `use<..>` that changes nothing.
-macro_use_extern_crate = "warn" # Legacy macro import.
-redundant_imports = "warn" # Already in scope.
-redundant_lifetimes = "warn" # Equal to another lifetime.
-single_use_lifetimes = "warn" # `'_` would do.
-trivial_casts = "warn" # A cast that does nothing.
-trivial_numeric_casts = "warn" # Same, for numbers.
-unit_bindings = "warn" # `let x = ();`.
-unused_extern_crates = "warn" # Unused.
-unused_import_braces = "warn" # `use a::{b}`.
-unused_lifetimes = "warn" # Unused.
-unused_macro_rules = "warn" # Unused macro arms.
-unused_qualifications = "warn" # `a::b` where `b` is in scope.
-
-# Left at rustc's default, besides edition migrations that `cargo fix --edition` turns on:
-# - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
-# - deprecated_in_future = "allow": for std's own deprecations.
-# - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
-# - linker_info = "allow": harmless linker chatter, like `ld: ignoring duplicate libraries`.
-# - missing_debug_implementations = "allow": `Debug` on every public type.
-# - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.

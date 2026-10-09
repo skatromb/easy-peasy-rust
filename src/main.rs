@@ -10,6 +10,7 @@ use std::io::{IsTerminal as _, Write as _, stdin, stdout};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, ensure};
+use cargo_metadata::semver::Version;
 use clap::{Args, Parser};
 use toml_file::TomlFile;
 use workspace::Workspace;
@@ -82,10 +83,24 @@ fn install(path: &Path, choices: Choices) -> Result<()> {
 fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
     let root = workspace.root();
-    toolchain::warn_if_older(root)?;
+    let rust = toolchain::rust_release(root)?;
 
+    let mut files = if toolchain::reads_lints(&rust)? {
+        lints(&workspace, choices, &rust)?
+    } else {
+        Vec::new()
+    };
+
+    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
+    merge::settings(clippy_toml.doc_mut(), choices, &rust)?;
+    files.push(clippy_toml);
+    Ok(files)
+}
+
+fn lints(workspace: &Workspace, choices: Choices, rust: &Version) -> Result<Vec<TomlFile>> {
+    let root = workspace.root();
     let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
-    merge::lints(cargo_toml.doc_mut(), choices)?;
+    merge::lints(cargo_toml.doc_mut(), choices, rust)?;
     let mut files = vec![cargo_toml];
 
     for member in workspace.members() {
@@ -93,9 +108,5 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
         merge::inherit(member_cargo_toml.doc_mut(), member, choices)?;
         files.push(member_cargo_toml);
     }
-
-    let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
-    merge::settings(clippy_toml.doc_mut(), choices)?;
-    files.push(clippy_toml);
     Ok(files)
 }
