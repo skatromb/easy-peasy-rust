@@ -34,6 +34,7 @@ let_underscore_must_use = "allow" # `let _ =` is how `unused_results` wants a re
 mod_module_files = "deny" # `foo.rs` over `foo/mod.rs`.
 pub_with_shorthand = "allow" # Opposite of `pub_without_shorthand`. Picks `pub(super)`.
 self_named_module_files = "allow" # Opposite of `mod_module_files`.
+semicolon_outside_block = "allow" # Opposite of `semicolon_inside_block`. Picks `;` inside: temporaries drop at once.
 separated_literal_suffix = "allow" # Opposite of `unseparated_literal_suffix`. Picks `1_u32`.
 
 # Readable code: idiomatic Rust
