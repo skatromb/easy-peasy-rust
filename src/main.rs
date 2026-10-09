@@ -35,7 +35,7 @@ struct CliArgs {
 
 #[derive(Args, Clone, Copy)]
 struct Choices {
-    /// Apply the preset without asking, keeping your lints it does not set.
+    /// Add what the preset sets and you lack, without asking. Keeps your own settings.
     #[arg(short = 'y', long)]
     yes: bool,
     /// Print the diff from the preset, without writing anything.
@@ -91,7 +91,9 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     if toolchain::reads_lints(&rust)? {
         let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
         skipped.extend(merge::lints(cargo_toml.doc_mut(), choices, &supported)?);
-        let members = members(&workspace, choices)?;
+        let mut members = members(&workspace)?;
+        let manifests = members.iter_mut().map(TomlFile::manifest);
+        merge::inherit(cargo_toml.doc_mut(), manifests, choices)?;
         merge::extras(cargo_toml.doc_mut(), choices)?;
         files.push(cargo_toml);
         files.extend(members);
@@ -103,15 +105,10 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     Ok(files)
 }
 
-fn members(workspace: &Workspace, choices: Choices) -> Result<Vec<TomlFile>> {
-    let root = workspace.root();
+fn members(workspace: &Workspace) -> Result<Vec<TomlFile>> {
     workspace
         .members()
         .iter()
-        .map(|member| {
-            let mut cargo_toml = TomlFile::open(root, member)?;
-            merge::inherit(cargo_toml.doc_mut(), member, choices)?;
-            Ok(cargo_toml)
-        })
+        .map(|member| TomlFile::open(workspace.root(), member))
         .collect()
 }

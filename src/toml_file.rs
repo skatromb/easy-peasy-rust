@@ -34,6 +34,10 @@ impl TomlFile {
         &mut self.doc
     }
 
+    pub(crate) fn manifest(&mut self) -> (&str, &mut DocumentMut) {
+        (&self.name, &mut self.doc)
+    }
+
     pub(crate) fn is_changed(&self) -> bool {
         self.before.as_deref() != Some(self.doc.to_string().as_str())
     }

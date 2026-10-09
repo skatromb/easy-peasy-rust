@@ -10,7 +10,7 @@ Run it inside a workspace or a single crate, or pass the path.
 cargo install easy-peasy-rust
 cargo easy-peasy [path]  # asks about each block that differs, then about your lints `easy-peasy-rust` does not list
 cargo easy-peasy --diff  # print the diff from `easy-peasy-rust`, don't write anything
-cargo easy-peasy --yes   # apply without asking, keep your lints `easy-peasy-rust` does not list
+cargo easy-peasy --yes   # add what you lack without asking, keep everything you set
 ```
 
 Then use your IDE as usual or run clippy manually:
@@ -41,7 +41,7 @@ Per crate, at the top of `src/lib.rs` or `src/main.rs`:
 
 Cargo does not allow a member to combine `workspace = true` with its own lint keys.
 
-Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` asks about its block again: answer `n` to keep yours.
+Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` keeps it: Enter on `Replace yours?` means no.
 
 ## Versioning
 

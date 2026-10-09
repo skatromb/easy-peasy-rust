@@ -17,8 +17,7 @@ impl Kind {
     pub(crate) fn label(self, name: &str) -> String {
         match self {
             Self::ClippyLint => format!("clippy::{name}"),
-            Self::RustcLint | Self::ClippySetting => name.to_owned(),
-            Self::Inheritance => format!("[lints] in {name}"),
+            Self::RustcLint | Self::ClippySetting | Self::Inheritance => name.to_owned(),
         }
     }
 
@@ -37,6 +36,7 @@ impl Kind {
 #[derive(Clone, Copy)]
 pub(crate) enum Question {
     Adopt,
+    Replace,
     Remove,
 }
 
@@ -44,6 +44,7 @@ impl Question {
     const fn prompt(self) -> &'static str {
         match self {
             Self::Adopt => "Adopt? [Y/n]",
+            Self::Replace => "Replace yours? [y/N]",
             Self::Remove => "Remove? [y/N]",
         }
     }
@@ -56,16 +57,16 @@ impl Question {
 pub(crate) struct Block {
     kind: Kind,
     title: String,
-    question: Question,
+    shown: bool,
     lines: Vec<String>,
 }
 
 impl Block {
-    pub(crate) fn new(kind: Kind, title: &str, question: Question) -> Self {
+    pub(crate) fn new(kind: Kind, title: &str) -> Self {
         Self {
             kind,
             title: title.to_owned(),
-            question,
+            shown: false,
             lines: Vec::new(),
         }
     }
@@ -83,22 +84,25 @@ impl Block {
         self.lines.push(self.kind.label(name));
     }
 
-    pub(crate) fn ask(&self, choices: Choices) -> Result<bool> {
+    pub(crate) fn ask(&mut self, question: Question, choices: Choices) -> Result<bool> {
         if self.lines.is_empty() {
             return Ok(false);
         }
 
         let mut out = stdout().lock();
-        writeln!(out, "{}\n{}\n", self.title, self.kind.docs())?;
-        for line in &self.lines {
+        if !self.shown {
+            writeln!(out, "{}\n{}\n", self.title, self.kind.docs())?;
+            self.shown = true;
+        }
+        for line in self.lines.drain(..) {
             writeln!(out, "  {line}")?;
         }
 
         let answer = if choices.diff {
             true
         } else {
-            write!(out, "{} ", self.question.prompt())?;
-            answer(&mut out, self.question, choices)?
+            write!(out, "{} ", question.prompt())?;
+            answer(&mut out, question, choices)?
         };
         writeln!(out)?;
         Ok(answer)
