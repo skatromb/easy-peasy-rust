@@ -25,14 +25,6 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
-        with:
-          enable-cache: true
-
-      - name: Install Python 3.14
-        run: uv python install 3.14
-
       - name: make dogfood
         run: make dogfood && git diff --exit-code
 
@@ -41,6 +33,18 @@ jobs:
 
       - name: make test
         run: make test
+
+  old-rust:
+    name: Test on old Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
 
       - name: make test-old
         run: make test-old

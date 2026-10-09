@@ -29,7 +29,7 @@ jobs:
       - name: Tag matches crate version
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
-          cargo_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          cargo_version=$(cargo pkgid | sed 's/.*@//')
           [ "$tag" = "$cargo_version" ] \
             || { echo "tag $tag != cargo $cargo_version"; exit 1; }
 

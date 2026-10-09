@@ -1,0 +1,30 @@
+name: Scraper
+
+on:
+  pull_request:
+    paths: [rules/external/scraper/**]
+  push:
+    branches: [main]
+    paths: [rules/external/scraper/**]
+
+concurrency:
+  group: scraper-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python 3.14
+        run: uv python install 3.14
+
+      - name: make lint-python
+        run: make lint-python
