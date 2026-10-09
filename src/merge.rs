@@ -5,7 +5,7 @@ use anyhow::{Context as _, Result, bail};
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
-use crate::block::{Block, Kind, Question};
+use crate::block::{Block, Kind, Question, shown};
 use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
@@ -54,24 +54,35 @@ pub(crate) fn inherit<'doc>(
     if block.ask(Question::Adopt, choices)? {
         switch(missing, &preset);
     }
+    replace_own(&mut block, changed, &preset, choices)
+}
 
+fn replace_own(
+    block: &mut Block,
+    changed: Vec<Manifest<'_>>,
+    preset: &Item,
+    choices: Choices,
+) -> Result<()> {
     for (name, manifest) in &changed {
-        block.push(name, manifest.get("lints"), &preset);
+        block.push(name, manifest.get("lints"), preset);
     }
-    if block.ask(Question::Replace, choices)? {
-        switch(changed, &preset);
-    } else {
-        warn_own_lints(&changed)?;
+    if !block.ask(Question::Replace, choices)? {
+        return warn(
+            &changed,
+            "keeps its own lints, so it gets none of the preset",
+        );
     }
+    if !choices.diff {
+        warn(&changed, "dropped its own lints")?;
+    }
+    switch(changed, preset);
     Ok(())
 }
 
-fn warn_own_lints(manifests: &[Manifest<'_>]) -> Result<()> {
-    for (name, _) in manifests {
-        writeln!(
-            stderr(),
-            "warning: {name} keeps its own lints, so it gets none of the preset. Move them to `#![allow(...)]` in the crate and rerun"
-        )?;
+fn warn(manifests: &[Manifest<'_>], what: &str) -> Result<()> {
+    for (name, manifest) in manifests {
+        let lints = manifest.get("lints").map(shown).unwrap_or_default();
+        writeln!(stderr(), "warning: {name} {what}: {lints}")?;
     }
     Ok(())
 }

@@ -30,6 +30,18 @@ fn installs_into_a_virtual_workspace_from_a_member() {
 }
 
 #[test]
+fn tells_what_a_member_dropped() {
+    let dir = project("workspace");
+
+    let output = install(&dir, &["--yes", "--drop-existing"]);
+
+    let warning = String::from_utf8(output.stderr).unwrap();
+    assert!(warning.contains(
+        "crates/two/Cargo.toml dropped its own lints: { clippy = { unwrap_used = \"allow\" } }"
+    ));
+}
+
+#[test]
 fn lists_every_workspace_member_in_one_block() {
     let dir = project("workspace");
 
