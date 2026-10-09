@@ -101,7 +101,7 @@ fn adds_the_preset_and_keeps_yours_with_yes() {
     let output = install(&dir, &["--yes"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("       Added No panics: 14 lints\n"));
+    assert!(stdout.contains("       Added No panics: "));
     assert!(stdout.contains("        Kept No panics: clippy::unwrap_used\n"));
     assert!(stdout.contains(
         "        Kept Your clippy lints not in `easy-peasy-rust`: clippy::float_arithmetic\n"

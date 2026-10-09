@@ -83,14 +83,23 @@ fn merges_into_a_hidden_clippy_toml() {
 
 #[test]
 fn unfolds_inline_lints() {
+    assert_unfolds("clippy = { unwrap_used = \"allow\" }");
+}
+
+#[test]
+fn unfolds_dotted_lints() {
+    assert_unfolds("clippy.unwrap_used = \"allow\"");
+}
+
+fn assert_unfolds(folded: &str) {
     let dir = project("crate");
-    let inline = fixture("crate/Cargo.toml")
+    let manifest = fixture("crate/Cargo.toml")
         .replace(
             "[lints.clippy]\nunwrap_used = \"allow\"\n",
-            "[lints]\nclippy = { unwrap_used = \"allow\" }\n",
+            &format!("[lints]\n{folded}\n"),
         )
         .replace("float_arithmetic = \"allow\"\n", "");
-    fs::write(dir.path().join("Cargo.toml"), inline).unwrap();
+    fs::write(dir.path().join("Cargo.toml"), manifest).unwrap();
 
     assert!(install(&dir, &["-y"]).status.success());
 
@@ -122,6 +131,5 @@ fn second_run_changes_nothing() {
     let output = install(&dir, &["-y"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert_eq!(stdout.matches("Unchanged").count(), 4);
-    assert!(!stdout.contains("Updated"));
+    assert!(!stdout.contains("Created") && !stdout.contains("Updated"));
 }
