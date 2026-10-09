@@ -2,6 +2,7 @@
 
 mod conflict;
 mod merge;
+mod supported;
 mod toml_file;
 mod toolchain;
 mod workspace;
@@ -10,8 +11,8 @@ use std::io::{IsTerminal as _, Write as _, stdin, stdout};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, ensure};
-use cargo_metadata::semver::Version;
 use clap::{Args, Parser};
+use supported::Supported;
 use toml_file::TomlFile;
 use workspace::Workspace;
 
@@ -84,29 +85,35 @@ fn merged(path: &Path, choices: Choices) -> Result<Vec<TomlFile>> {
     let workspace = Workspace::locate(path)?;
     let root = workspace.root();
     let rust = toolchain::rust_release(root)?;
+    let supported = Supported::new(&rust)?;
+    let mut files = Vec::new();
+    let mut skipped = Vec::new();
 
-    let mut files = if toolchain::reads_lints(&rust)? {
-        lints(&workspace, choices, &rust)?
-    } else {
-        Vec::new()
-    };
+    if toolchain::reads_lints(&rust)? {
+        let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
+        skipped = merge::lints(cargo_toml.doc_mut(), choices, &supported)?;
+        files.push(cargo_toml);
+        files.extend(members(&workspace, choices)?);
+    }
 
     let mut clippy_toml = TomlFile::open(root, workspace.clippy_toml())?;
-    merge::settings(clippy_toml.doc_mut(), choices, &rust)?;
+    skipped.extend(merge::settings(clippy_toml.doc_mut(), choices, &supported)?);
     files.push(clippy_toml);
+
+    skipped.sort();
+    toolchain::warn_skipped(&rust, &skipped)?;
     Ok(files)
 }
 
-fn lints(workspace: &Workspace, choices: Choices, rust: &Version) -> Result<Vec<TomlFile>> {
+fn members(workspace: &Workspace, choices: Choices) -> Result<Vec<TomlFile>> {
     let root = workspace.root();
-    let mut cargo_toml = TomlFile::open(root, "Cargo.toml")?;
-    merge::lints(cargo_toml.doc_mut(), choices, rust)?;
-    let mut files = vec![cargo_toml];
-
-    for member in workspace.members() {
-        let mut member_cargo_toml = TomlFile::open(root, member)?;
-        merge::inherit(member_cargo_toml.doc_mut(), member, choices)?;
-        files.push(member_cargo_toml);
-    }
-    Ok(files)
+    workspace
+        .members()
+        .iter()
+        .map(|member| {
+            let mut cargo_toml = TomlFile::open(root, member)?;
+            merge::inherit(cargo_toml.doc_mut(), member, choices)?;
+            Ok(cargo_toml)
+        })
+        .collect()
 }

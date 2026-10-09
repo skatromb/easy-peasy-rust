@@ -1,30 +1,32 @@
 use std::iter;
 
 use anyhow::{Context as _, Result, bail};
-use cargo_metadata::semver::Version;
 use toml_edit::{DocumentMut, Item, Key, Table, Value, value};
 
 use crate::Choices;
 use crate::conflict::{self, Conflict, Kind};
+use crate::supported::Supported;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
-const VALIDITY: &str = include_str!("../rules/validity.toml");
 
-pub(crate) fn lints(cargo_toml: &mut DocumentMut, choices: Choices, rust: &Version) -> Result<()> {
+pub(crate) fn lints(
+    cargo_toml: &mut DocumentMut,
+    choices: Choices,
+    supported: &Supported,
+) -> Result<Vec<String>> {
     let is_workspace = cargo_toml.contains_key("workspace");
     let path: &[&str] = if is_workspace {
         &["workspace", "lints"]
     } else {
         &["lints"]
     };
-    let kept = tools(table_at(cargo_toml, path)?, choices, rust)?;
-    conflict::warn_kept(&kept)?;
+    let skipped = tools(table_at(cargo_toml, path)?, choices, supported)?;
 
     if is_workspace && cargo_toml.contains_key("package") {
         inherit(cargo_toml, "Cargo.toml", choices)?;
     }
-    Ok(())
+    Ok(skipped)
 }
 
 pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices) -> Result<()> {
@@ -51,16 +53,16 @@ pub(crate) fn inherit(cargo_toml: &mut DocumentMut, name: &str, choices: Choices
 pub(crate) fn settings(
     clippy_toml: &mut DocumentMut,
     choices: Choices,
-    rust: &Version,
-) -> Result<()> {
+    supported: &Supported,
+) -> Result<Vec<String>> {
     let mut preset: DocumentMut = SETTINGS.parse()?;
-    let skipped = drop_newer(&mut preset, "clippy.toml", Kind::ClippySetting, rust)?;
-    conflict::warn_skipped(&skipped)?;
+    let skipped = supported.retain(&mut preset, "clippy.toml", Kind::ClippySetting);
 
-    table(clippy_toml, &preset, Kind::ClippySetting, choices)
+    table(clippy_toml, &preset, Kind::ClippySetting, choices)?;
+    Ok(skipped)
 }
 
-fn tools(target: &mut Table, choices: Choices, rust: &Version) -> Result<Vec<Conflict>> {
+fn tools(target: &mut Table, choices: Choices, supported: &Supported) -> Result<Vec<String>> {
     let preset: DocumentMut = LINTS.parse()?;
     let mut kept = Vec::new();
     let mut skipped = Vec::new();
@@ -72,42 +74,16 @@ fn tools(target: &mut Table, choices: Choices, rust: &Version) -> Result<Vec<Con
         };
         let preset_lints = lints.as_table().context("preset tool is not a table")?;
 
-        let mut supported = preset_lints.clone();
-        skipped.extend(drop_newer(&mut supported, tool, kind, rust)?);
+        let mut known = preset_lints.clone();
+        skipped.extend(supported.retain(&mut known, tool, kind));
 
         let tool_lints = table_at(target, &[tool])?;
-        table(tool_lints, &supported, kind, choices)?;
+        table(tool_lints, &known, kind, choices)?;
         kept.extend(existing(tool_lints, preset_lints, kind, choices)?);
     }
 
-    conflict::warn_skipped(&skipped)?;
-    Ok(kept)
-}
-
-fn drop_newer(
-    preset: &mut Table,
-    section: &str,
-    kind: Kind,
-    rust: &Version,
-) -> Result<Vec<String>> {
-    let validity: DocumentMut = VALIDITY.parse()?;
-    let mut newer = Vec::new();
-
-    for (name, _) in preset.iter() {
-        let valid_from = validity
-            .get(section)
-            .and_then(|valid| valid.get(name))
-            .and_then(Item::as_str)
-            .with_context(|| format!("`{}` is missing from validity.toml", kind.label(name)))?;
-        if Version::parse(&format!("{valid_from}.0"))? > *rust {
-            newer.push(name.to_owned());
-        }
-    }
-
-    for name in &newer {
-        drop(preset.remove(name));
-    }
-    Ok(newer.iter().map(|name| kind.label(name)).collect())
+    conflict::warn_kept(&kept)?;
+    Ok(skipped)
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {

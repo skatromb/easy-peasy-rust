@@ -28,8 +28,27 @@ pub(crate) fn reads_lints(rust: &Version) -> Result<bool> {
     if !reads {
         writeln!(
             stderr(),
-            "warning: skipped the lints, Cargo reads them from Rust {CARGO_LINTS}, upgrade it and rerun to add them"
+            "warning: skipped the lints, Cargo reads them from Rust {}, upgrade it and rerun to add them",
+            release(&CARGO_LINTS)
         )?;
     }
     Ok(reads)
+}
+
+pub(crate) fn warn_skipped(rust: &Version, skipped: &[String]) -> Result<()> {
+    if skipped.is_empty() {
+        return Ok(());
+    }
+
+    writeln!(
+        stderr(),
+        "warning: skipped what Rust {} does not know yet, upgrade it and rerun to add: {}",
+        release(rust),
+        skipped.join(", ")
+    )?;
+    Ok(())
+}
+
+fn release(version: &Version) -> String {
+    format!("{}.{}", version.major, version.minor)
 }

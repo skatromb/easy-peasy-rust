@@ -143,19 +143,6 @@ pub(crate) fn warn_kept(kept: &[Conflict]) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn warn_skipped(skipped: &[String]) -> Result<()> {
-    if skipped.is_empty() {
-        return Ok(());
-    }
-
-    writeln!(
-        stderr(),
-        "warning: skipped what your Rust does not know yet, upgrade it and rerun to add: {}",
-        skipped.join(", ")
-    )?;
-    Ok(())
-}
-
 fn shown(setting: Option<&Item>) -> String {
     setting.map_or_else(|| "not set".to_owned(), undecorated)
 }
