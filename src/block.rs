@@ -41,12 +41,18 @@ pub(crate) enum Question {
 }
 
 impl Question {
-    const fn prompt(self) -> &'static str {
-        match self {
+    fn prompt(self, choices: Choices) -> String {
+        let question = match self {
             Self::Adopt => "Adopt?",
             Self::Replace => "Replace yours?",
             Self::Remove => "Remove?",
-        }
+        };
+        let hint = if self.default(choices) {
+            "[Y/n]"
+        } else {
+            "[y/N]"
+        };
+        format!("{question} {hint}")
     }
 
     const fn default(self, choices: Choices) -> bool {
@@ -101,8 +107,7 @@ impl Block {
         let answer = if choices.diff {
             true
         } else {
-            let hint = if question.default(choices) { "[Y/n]" } else { "[y/N]" };
-            write!(out, "{} {hint} ", question.prompt())?;
+            write!(out, "{} ", question.prompt(choices))?;
             answer(&mut out, question, choices)?
         };
         writeln!(out)?;
