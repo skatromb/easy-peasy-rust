@@ -56,6 +56,7 @@ cargo = { level = "warn", priority = -1 } # `*` versions, odd feature names.
 cargo_common_metadata = "allow" # Fires on private crates too, unless `publish = false`.
 multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot fix.
 
+# Custom set of `restriction` lints, picked one-by-one
 # easy-peasy: No panics
 arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
 cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
