@@ -2,8 +2,8 @@
 
 [![Check](https://github.com/skatromb/easy-peasy-rust/actions/workflows/check.yml/badge.svg)](https://github.com/skatromb/easy-peasy-rust/actions/workflows/check.yml)
 [![Crates.io](https://img.shields.io/crates/v/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
-[![Downloads](https://img.shields.io/crates/dr/easy-peasy-rust.svg?label=downloads%2F90d)](https://crates.io/crates/easy-peasy-rust)
-[![MSRV](https://img.shields.io/crates/msrv/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
+[![Downloads](https://img.shields.io/crates/d/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
+[![Rust version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fskatromb%2Feasy-peasy-rust%2Fmain%2FCargo.toml&query=%24.package.rust-version&prefix=%E2%89%A5&label=rust%20version)](https://crates.io/crates/easy-peasy-rust)
 [![easy-peasy-rust](https://img.shields.io/badge/style-easy--peasy-fecc02.svg)](https://github.com/skatromb/easy-peasy-rust)
 
 An opinionated lint preset for Rust, attempting to resemble the [wemake-python-styleguide](https://wemake-python-styleguide.readthedocs.io/).
