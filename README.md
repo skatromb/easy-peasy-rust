@@ -1,5 +1,11 @@
 # easy-peasy-rust
 
+[![Check](https://github.com/skatromb/easy-peasy-rust/actions/workflows/check.yml/badge.svg)](https://github.com/skatromb/easy-peasy-rust/actions/workflows/check.yml)
+[![Crates.io](https://img.shields.io/crates/v/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
+[![Downloads](https://img.shields.io/crates/dr/easy-peasy-rust.svg?label=downloads%2F90d)](https://crates.io/crates/easy-peasy-rust)
+[![MSRV](https://img.shields.io/crates/msrv/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
+[![easy-peasy-rust](https://img.shields.io/badge/style-easy--peasy-dea584.svg)](https://github.com/skatromb/easy-peasy-rust)
+
 An opinionated lint preset for Rust, attempting to resemble the [wemake-python-styleguide](https://wemake-python-styleguide.readthedocs.io/).
 
 ## Usage
@@ -49,6 +55,14 @@ Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold 
 ## Versioning
 
 `1.99.x` has the lints of Rust 1.99. Older toolchains get only the lints and settings they know, per [`validity.toml`](rules/validity.toml): upgrade Rust and rerun `cargo easy-peasy` to add the rest.
+
+## Badge
+
+[![easy-peasy-rust](https://img.shields.io/badge/style-easy--peasy-dea584.svg)](https://github.com/skatromb/easy-peasy-rust)
+
+```md
+[![easy-peasy-rust](https://img.shields.io/badge/style-easy--peasy-dea584.svg)](https://github.com/skatromb/easy-peasy-rust)
+```
 
 ## License
 
