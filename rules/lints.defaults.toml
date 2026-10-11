@@ -1,52 +1,52 @@
-# Lints left at their default level, and why. easy-peasy never writes these.
+# Lints left at their default level with reason. `easy-peasy` never writes these.
 
 [rust]
-dead_code_pub_in_binary = "allow" # A test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
-deprecated_in_future = "allow" # For std's own deprecations.
-elided_lifetimes_in_paths = "allow" # `Lifetimes<'_>` everywhere.
-linker_info = "allow" # Harmless linker chatter, like `ld: ignoring duplicate libraries`.
-missing_debug_implementations = "allow" # `Debug` on every public type.
-unused_crate_dependencies = "allow" # Flags dev-dependencies in every target that does not use them.
+dead_code_pub_in_binary = "A test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest."
+deprecated_in_future = "For std's own deprecations."
+elided_lifetimes_in_paths = "`Lifetimes<'_>` everywhere."
+linker_info = "Harmless linker chatter, like `ld: ignoring duplicate libraries`."
+missing_debug_implementations = "`Debug` on every public type."
+unused_crate_dependencies = "Flags dev-dependencies in every target that does not use them."
 
 [clippy]
 # Groups
-complexity = "warn" # Simpler code for the same thing.
-correctness = "deny" # Outright wrong code fails the build.
-perf = "warn" # Faster code for the same thing.
-restriction = "allow" # Picked lint by lint, as clippy advises.
-style = "warn" # Idiomatic code.
-suspicious = "warn" # Most likely wrong code.
+complexity = "Simpler code for the same thing."
+correctness = "Outright wrong code fails the build."
+perf = "Faster code for the same thing."
+restriction = "Picked lint by lint, as clippy advises."
+style = "Idiomatic code."
+suspicious = "Most likely wrong code."
 
 # Restriction lints
-arbitrary_source_item_ordering = "allow" # Sorts by name, code reads better top-down.
-assertions_on_result_states = "allow" # Its fix, `unwrap()`, is denied.
-big_endian_bytes = "allow" # Big endian, the network order, is the pick.
-clone_on_ref_ptr = "allow" # `Rc::clone(&x)` over `x.clone()` is noise.
-default_numeric_fallback = "allow" # A suffix on every literal.
-exhaustive_enums = "allow" # `#[non_exhaustive]` matters for library semver only.
-exhaustive_structs = "allow" # Same.
-float_arithmetic = "allow" # Bans float math.
-get_unwrap = "allow" # Its fix, indexing, is denied, and `unwrap_used` flags it anyway.
-impl_trait_in_params = "allow" # Bans `impl Trait` arguments.
-implicit_return = "allow" # Contradicts `needless_return`.
-inline_asm_x86_intel_syntax = "allow" # Opposite of `inline_asm_x86_att_syntax`.
-inline_trait_bounds = "allow" # `where` for every bound.
-integer_division_remainder_used = "allow" # For constant-time crypto.
-let_underscore_must_use = "allow" # `let _ =` is how `unused_results` wants a result dropped.
-let_underscore_untyped = "allow" # `let _: T =` everywhere.
-missing_asserts_for_indexing = "allow" # Indexing is denied.
-missing_docs_in_private_items = "allow" # rustc `missing_docs` covers the public API.
-missing_inline_in_public_items = "allow" # Premature optimisation.
-missing_trait_methods = "allow" # Defeats default methods.
-non_ascii_literal = "allow" # Text is Unicode, `non_ascii_idents` guards names.
-pattern_type_mismatch = "allow" # Fights match ergonomics.
-pub_use = "allow" # Re-exports shape a public API.
-pub_with_shorthand = "allow" # Opposite of `pub_without_shorthand`.
-question_mark_used = "allow" # Bans `?`.
-rest_pattern_accessible_field = "allow" # `..` in patterns is fine.
-self_named_module_files = "allow" # Opposite of `mod_module_files`.
-semicolon_outside_block = "allow" # Opposite of `semicolon_inside_block`.
-separated_literal_suffix = "allow" # Opposite of `unseparated_literal_suffix`.
-single_call_fn = "allow" # Small named functions are often called once.
-std_instead_of_alloc = "allow" # For `no_std`.
-std_instead_of_core = "allow" # For `no_std`.
+arbitrary_source_item_ordering = "Sorts by name, code reads better top-down."
+assertions_on_result_states = "Its fix, `unwrap()`, is denied."
+big_endian_bytes = "Big endian, the network order, is the pick."
+clone_on_ref_ptr = "`Rc::clone(&x)` over `x.clone()` is noise."
+default_numeric_fallback = "A suffix on every literal."
+exhaustive_enums = "`#[non_exhaustive]` matters for library semver only."
+exhaustive_structs = "Same."
+float_arithmetic = "Bans float math."
+get_unwrap = "Its fix, indexing, is denied, and `unwrap_used` flags it anyway."
+impl_trait_in_params = "Bans `impl Trait` arguments."
+implicit_return = "Contradicts `needless_return`."
+inline_asm_x86_intel_syntax = "Opposite of `inline_asm_x86_att_syntax`."
+inline_trait_bounds = "`where` for every bound."
+integer_division_remainder_used = "For constant-time crypto."
+let_underscore_must_use = "`let _ =` is how `unused_results` wants a result dropped."
+let_underscore_untyped = "`let _: T =` everywhere."
+missing_asserts_for_indexing = "Indexing is denied."
+missing_docs_in_private_items = "rustc `missing_docs` covers the public API."
+missing_inline_in_public_items = "Premature optimisation."
+missing_trait_methods = "Defeats default methods."
+non_ascii_literal = "Text is Unicode, `non_ascii_idents` guards names."
+pattern_type_mismatch = "Fights match ergonomics."
+pub_use = "Re-exports shape a public API."
+pub_with_shorthand = "Opposite of `pub_without_shorthand`."
+question_mark_used = "Bans `?`."
+rest_pattern_accessible_field = "`..` in patterns is fine."
+self_named_module_files = "Opposite of `mod_module_files`."
+semicolon_outside_block = "Opposite of `semicolon_inside_block`."
+separated_literal_suffix = "Opposite of `unseparated_literal_suffix`."
+single_call_fn = "Small named functions are often called once."
+std_instead_of_alloc = "For `no_std`."
+std_instead_of_core = "For `no_std`."

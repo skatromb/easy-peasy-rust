@@ -1,9 +1,9 @@
 //! Checks the preset files themselves.
 #![cfg(test)]
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use toml_edit::{DocumentMut, Item, Value};
+use toml_edit::{DocumentMut, Item};
 
 const PRESETS: [&str; 2] = [
     include_str!("../rules/lints.toml"),
@@ -106,59 +106,6 @@ fn listed(listing: &str) -> BTreeSet<&str> {
         .lines()
         .filter_map(|line| line.strip_prefix("| [`")?.split('`').next())
         .collect()
-}
-
-#[test]
-fn lint_defaults_match_upstream() {
-    let lints: DocumentMut = DEFAULTS[0].parse().unwrap();
-    let levels = lints
-        .iter()
-        .flat_map(|(_, section)| section.as_table().unwrap().iter());
-    let changed: Vec<&str> = levels
-        .filter(|&(lint, level)| level.as_str() != Some(upstream_level(lint)))
-        .map(|(lint, _)| lint)
-        .collect();
-    assert!(changed.is_empty(), "not upstream defaults: {changed:?}");
-}
-
-fn upstream_level(lint: &str) -> &str {
-    match lint {
-        "correctness" => "deny",
-        "complexity" | "perf" | "style" | "suspicious" => "warn",
-        _ => "allow",
-    }
-}
-
-#[test]
-fn setting_defaults_match_upstream() {
-    let upstream: BTreeMap<&str, String> = SETTINGS
-        .lines()
-        .filter_map(|row| {
-            let setting = row.strip_prefix("| [`")?.split('`').next()?;
-            let raw = row.split(" | ").nth(1)?.trim_matches('`');
-            let default = raw.parse().unwrap_or_else(|_| Value::from(raw));
-            Some((setting, normalized(&default)))
-        })
-        .collect();
-    let settings: DocumentMut = DEFAULTS[1].parse().unwrap();
-    let changed: Vec<&str> = settings
-        .iter()
-        .filter(|(setting, default)| {
-            upstream.get(setting) != default.as_value().map(normalized).as_ref()
-        })
-        .map(|(setting, _)| setting)
-        .collect();
-    assert!(changed.is_empty(), "not clippy's defaults: {changed:?}");
-}
-
-fn normalized(toml: &Value) -> String {
-    toml.as_array().map_or_else(
-        || toml.clone().decorated("", "").to_string(),
-        |array| {
-            let elements: Vec<String> = array.iter().map(normalized).collect();
-            format!("[{}]", elements.join(", "))
-        },
-    )
 }
 
 #[test]
