@@ -1,0 +1,35 @@
+# Settings left at clippy's default, and why. easy-peasy never writes these.
+
+absolute-paths-allowed-crates = [] # Every crate alike.
+absolute-paths-max-segments = 2 # `use std::fs;` then `fs::read`, not `std::fs::read`.
+accept-comment-above-attributes = true # `unsafe_code` is denied.
+accept-comment-above-statement = true # `unsafe_code` is denied.
+allow-comparison-to-zero = true # `x % 2 == 0` holds for negative `x` too.
+allow-exact-repetitions = true # `config::Config` is idiomatic.
+allow-expect-in-consts = true # A panic there fails the build, not the run.
+allow-large-stack-frames-in-tests = true # Test fixtures may be big.
+allow-mixed-uninlined-format-args = true # No half-inlined strings like "{a} {}".
+allow-one-hash-in-raw-strings = false # `r""` when there is no quote inside.
+allow-private-module-inception = false # `foo::foo` says foo twice, private or not.
+allow-renamed-params-for = ["core::convert::From", "core::convert::TryFrom", "core::str::FromStr"] # `From` impls may rename `value`, a disallowed name.
+allow-unwrap-in-consts = true # A panic there fails the build, not the run.
+allow-unwrap-types = [] # `lock().unwrap_or_else(PoisonError::into_inner)` does not panic.
+allow-useless-vec-in-tests = false # Tests use arrays too.
+allowed-dotfiles = [] # For your own dotfiles.
+allowed-duplicate-crates = [] # `multiple_crate_versions` is allowed.
+allowed-prefixes = ["to", "as", "into", "from", "try_into", "try_from"] # `to_config` in `config` reads fine.
+allowed-scripts = ["Latin"] # As WPS119.
+allowed-wildcard-imports = [] # Name what you import.
+arithmetic-side-effects-allowed = [] # For your own overflow-safe types.
+arithmetic-side-effects-allowed-binary = [] # For your own overflow-safe types.
+arithmetic-side-effects-allowed-unary = [] # For your own overflow-safe types.
+array-size-threshold = 16384 # 16 KB on the stack is fine.
+await-holding-invalid-types = [] # For your own types.
+check-private-items = false # No `# Errors` docs on private items, as `missing_docs_in_private_items`.
+inherent-impl-lint-scope = "crate" # One `impl` block per type.
+literal-representation-threshold = 16384 # Hex only for big literals that read better in it.
+max-include-file-size = 1000000 # 1 MB is enough for fixtures.
+min-ident-chars-lint-trait-impl = false # Renaming `f` in `fmt(&self, f)` trips `renamed_function_params`.
+semicolon-inside-block-ignore-singleline = false # One rule for every block.
+semicolon-outside-block-ignore-multiline = false # One rule for every block.
+suppress-restriction-lint-in-const = false # It also silences `const fn`, which can panic at runtime.

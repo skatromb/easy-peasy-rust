@@ -1,7 +1,8 @@
-"""Scrape the clippy groups that are allowed by default into ../clippy."""
+"""Scrape the clippy groups that are allowed by default and the settings into ../clippy."""
 
 import re
 import subprocess
+from itertools import starmap
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -24,7 +25,7 @@ DECLARATION = re.compile(
     r'pub (\w+),(?:\s*//.*)*\s*(\w+),\s*(?:r#"(.*?)"#|"((?:[^"\\]|\\[\s\S])*)")'
 )
 ESCAPE = re.compile(r"\\(.)", re.DOTALL)
-GROUPS = ("pedantic", "nursery", "restriction")
+GROUPS = ("cargo", "pedantic", "nursery", "restriction")
 Lint = tuple[str, str, str]
 HEAD = """# clippy {group}
 
@@ -32,6 +33,20 @@ Every lint of the clippy `{group}` group as of Rust {rust}. All are allowed by d
 
 | Lint | Description |
 | --- | --- |
+"""
+SETTINGS_DOCS = "https://doc.rust-lang.org/clippy/lint_configuration.html"
+SETTING = re.compile(
+    r"^## `([a-z0-9-]+)`\n(.*?)\n\n.*?^\*\*Default Value:\*\* `([^\n]*)`$"
+    r".*?^\*\*Affected lints:\*\*\n((?:\* [^\n]*\n?)+)",
+    re.MULTILINE | re.DOTALL,
+)
+AFFECTED_LINT = re.compile(r"\[`(\w+)`\]")
+SETTINGS_HEAD = f"""# clippy settings
+
+Every `clippy.toml` setting as of Rust {RUST}.
+
+| Setting | Default | Lints | Description |
+| --- | --- | --- | --- |
 """
 
 
@@ -66,10 +81,24 @@ def write_groups(source: Path) -> None:
         (TARGET / f"{group}.md").write_text(group_file(group, lints))
 
 
+def setting_row(name: str, description: str, default: str, affected: str) -> str:
+    lints = ", ".join(map("`{0}`".format, AFFECTED_LINT.findall(affected)))
+    summary = " ".join(description.split())
+    link = f"[`{name}`]({SETTINGS_DOCS}#{name})"
+    return f"| {link} | `{default}` | {lints} | {summary} |\n"
+
+
+def write_settings(book: Path) -> None:
+    settings = SETTING.findall((book / "lint_configuration.md").read_text())
+    rows = starmap(setting_row, settings)
+    (TARGET / "settings.md").write_text(SETTINGS_HEAD + "".join(rows))
+
+
 def main() -> None:
     with TemporaryDirectory() as clone:
         subprocess.run([*CLONE, REPO, clone], check=True)
         write_groups(Path(clone) / "clippy_lints" / "src")
+        write_settings(Path(clone) / "book" / "src")
 
 
 main()

@@ -5,7 +5,7 @@ VERSION = $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages
 
 lint:
 	cargo fmt --check
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --all-targets --config 'build.warnings="deny"'
 
 lint-python:
 	$(SCRAPE) ruff format --check .

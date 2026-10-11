@@ -37,14 +37,6 @@ unused_lifetimes = "warn" # Unused.
 unused_macro_rules = "warn" # Unused macro arms.
 unused_qualifications = "warn" # `a::b` where `b` is in scope.
 
-# rustc's defaults, besides edition migrations that `cargo fix --edition` turns on:
-# - dead_code_pub_in_binary = "allow": a test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest.
-# - deprecated_in_future = "allow": for std's own deprecations.
-# - elided_lifetimes_in_paths = "allow": `Lifetimes<'_>` everywhere.
-# - linker_info = "allow": harmless linker chatter, like `ld: ignoring duplicate libraries`.
-# - missing_debug_implementations = "allow": `Debug` on every public type.
-# - unused_crate_dependencies = "allow": flags dev-dependencies in every target that does not use them.
-
 [clippy]
 # easy-peasy: Nursery and pedantic
 nursery = { level = "warn", priority = -1 } # Newer lints, most of them useful.
@@ -181,37 +173,3 @@ large_include_file = "warn" # Threshold in clippy.toml.
 redundant_type_annotations = "warn" # `let x: String = String::new()`.
 semicolon_inside_block = "warn" # `{ x; }`: temporaries drop at once.
 unseparated_literal_suffix = "warn" # `1_u32` over `1u32`.
-
-# Restriction lints left at clippy's default:
-# - arbitrary_source_item_ordering = "allow": sorts by name, code reads better top-down.
-# - assertions_on_result_states = "allow": its fix, `unwrap()`, is denied.
-# - big_endian_bytes = "allow": big endian, the network order, is the pick.
-# - clone_on_ref_ptr = "allow": `Rc::clone(&x)` over `x.clone()` is noise.
-# - default_numeric_fallback = "allow": a suffix on every literal.
-# - exhaustive_enums = "allow": `#[non_exhaustive]` matters for library semver only.
-# - exhaustive_structs = "allow": same.
-# - float_arithmetic = "allow": bans float math.
-# - get_unwrap = "allow": its fix, indexing, is denied, and `unwrap_used` flags it anyway.
-# - impl_trait_in_params = "allow": bans `impl Trait` arguments.
-# - implicit_return = "allow": contradicts `needless_return`.
-# - inline_asm_x86_intel_syntax = "allow": opposite of `inline_asm_x86_att_syntax`.
-# - inline_trait_bounds = "allow": `where` for every bound.
-# - integer_division_remainder_used = "allow": for constant-time crypto.
-# - let_underscore_must_use = "allow": `let _ =` is how `unused_results` wants a result dropped.
-# - let_underscore_untyped = "allow": `let _: T =` everywhere.
-# - missing_asserts_for_indexing = "allow": indexing is denied.
-# - missing_docs_in_private_items = "allow": rustc `missing_docs` covers the public API.
-# - missing_inline_in_public_items = "allow": premature optimisation.
-# - missing_trait_methods = "allow": defeats default methods.
-# - non_ascii_literal = "allow": text is Unicode, `non_ascii_idents` guards names.
-# - pattern_type_mismatch = "allow": fights match ergonomics.
-# - pub_use = "allow": re-exports shape a public API.
-# - pub_with_shorthand = "allow": opposite of `pub_without_shorthand`.
-# - question_mark_used = "allow": bans `?`.
-# - rest_pattern_accessible_field = "allow": `..` in patterns is fine.
-# - self_named_module_files = "allow": opposite of `mod_module_files`.
-# - semicolon_outside_block = "allow": opposite of `semicolon_inside_block`.
-# - separated_literal_suffix = "allow": opposite of `unseparated_literal_suffix`.
-# - single_call_fn = "allow": small named functions are often called once.
-# - std_instead_of_alloc = "allow": for `no_std`.
-# - std_instead_of_core = "allow": for `no_std`.
