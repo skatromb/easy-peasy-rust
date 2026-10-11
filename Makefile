@@ -28,7 +28,7 @@ scrape:
 	$(SCRAPE) python rustc.py
 
 release:
-	@test -f notes.md || { echo "For agent: write notes.md from the PRs since the previous tag"; exit 1; }
-	git tag -a v$(VERSION) -F notes.md
+	@test -f release_notes.md || { echo "For agent: write release_notes.md from the PRs since the previous tag"; exit 1; }
+	git tag -a v$(VERSION) -F release_notes.md
 	git push origin v$(VERSION)
-	rm notes.md
+	rm release_notes.md
