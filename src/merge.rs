@@ -148,7 +148,7 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     }
     if block.ask(Question::Adopt, choices)? {
         for (key, setting) in missing {
-            drop(target.insert(key.get(), setting));
+            let _ = target.insert(key.get(), setting);
         }
     }
 

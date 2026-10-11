@@ -7,7 +7,6 @@ unsafe_code = "deny" # Safe Rust only.
 # easy-peasy: Hidden behaviour
 ambiguous_negative_literals = "warn" # `-1.abs()` is `-(1.abs())`.
 deref_into_dyn_supertrait = "warn" # Trait upcasting shadows the `Deref`.
-let_underscore_drop = "warn" # `let _ = guard` drops it at once.
 meta_variable_misuse = "warn" # Broken macro variables.
 non_ascii_idents = "warn" # Lookalike names.
 unstable_features = "warn" # Stable Rust only.
@@ -50,8 +49,7 @@ multiple_crate_versions = "allow" # Duplicates come from dependencies you cannot
 
 # Custom set of `restriction` lints, picked one-by-one
 # easy-peasy: No panics
-arithmetic_side_effects = "deny" # Overflow panics in debug, wraps in release.
-cast_abs_to_unsigned = "deny" # `MIN.abs()` overflows. Use `unsigned_abs()`.
+arithmetic_side_effects = "warn" # Overflow panics in debug, wraps in release.
 exit = "warn" # Skips destructors. Return from `main`.
 expect_used = "deny" # Panics.
 indexing_slicing = "deny" # Panics out of bounds. Use `get`.
@@ -60,7 +58,6 @@ panic = "deny" # Panics.
 panic_in_result_fn = "deny" # A `Result` fn must not also panic.
 string_slice = "deny" # Panics off a `char` boundary.
 todo = "deny" # Unfinished code must not ship.
-unchecked_time_subtraction = "deny" # Panics on underflow. Use `checked_sub`.
 unimplemented = "deny" # Unfinished code must not ship.
 unreachable = "deny" # Panics.
 unwrap_in_result = "warn" # A `Result` fn returns its errors.

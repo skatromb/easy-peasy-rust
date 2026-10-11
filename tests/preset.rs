@@ -36,7 +36,7 @@ const GROUPS: [&str; 9] = [
 fn validity_matches_preset() {
     let mut lints: DocumentMut = PRESETS[0].parse().unwrap();
     let settings: DocumentMut = PRESETS[1].parse().unwrap();
-    drop(lints.insert("clippy.toml", Item::Table(settings.as_table().clone())));
+    let _ = lints.insert("clippy.toml", Item::Table(settings.as_table().clone()));
 
     let preset = entries(&lints);
     let validity = entries(&VALIDITY.parse().unwrap());
@@ -62,14 +62,9 @@ fn entries(document: &DocumentMut) -> BTreeSet<String> {
 #[test]
 fn every_clippy_lint_decided() {
     let files = [PRESETS[0], DEFAULTS[0]].map(|lints| lints.split_once("[clippy]").unwrap().1);
-    let suspicious = ["cast_abs_to_unsigned"];
     let required = listed(RESTRICTION).into_iter().chain(GROUPS);
     let listings = [CARGO, NURSERY, PEDANTIC, RESTRICTION];
-    let known = listings
-        .into_iter()
-        .flat_map(listed)
-        .chain(GROUPS)
-        .chain(suspicious);
+    let known = listings.into_iter().flat_map(listed).chain(GROUPS);
     assert_decided(files, &required.collect(), &known.collect());
 }
 

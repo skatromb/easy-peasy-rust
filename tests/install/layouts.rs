@@ -115,7 +115,7 @@ fn adds_missing_lints_back_to_their_blocks() {
     let installed = read(&dir, "Cargo.toml");
     let without = installed
         .replace("ffi_unwind_calls = \"warn\"\n", "")
-        .replace("let_underscore_drop = \"warn\"\n", "");
+        .replace("meta_variable_misuse = \"warn\"\n", "");
     fs::write(dir.path().join("Cargo.toml"), without).unwrap();
 
     assert!(install(&dir, &[]).status.success());

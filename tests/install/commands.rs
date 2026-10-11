@@ -48,7 +48,7 @@ fn asks_about_each_block() {
 fn asks_again_on_an_unclear_answer() {
     let dir = project("crate");
     let mut session = ask(&dir);
-    drop(session.exp_string("Adopt? [Y/n] ").unwrap());
+    let _ = session.exp_string("Adopt? [Y/n] ").unwrap();
 
     let _ = session.send_line("maybe").unwrap();
 
@@ -114,7 +114,7 @@ fn adds_the_preset_and_keeps_yours_by_default() {
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("\nunwrap_in_result = \"warn\"\nunwrap_used = \"allow\"\n"));
     assert!(
-        cargo_toml.contains("\n\n# easy-peasy: No panics\narithmetic_side_effects = \"deny\"\n")
+        cargo_toml.contains("\n\n# easy-peasy: No panics\narithmetic_side_effects = \"warn\"\n")
     );
     assert!(cargo_toml.contains("\n\n# easy-peasy: yours\nfloat_arithmetic = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));

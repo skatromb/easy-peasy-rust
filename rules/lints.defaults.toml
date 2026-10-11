@@ -4,6 +4,7 @@
 dead_code_pub_in_binary = "A test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest."
 deprecated_in_future = "For std's own deprecations."
 elided_lifetimes_in_paths = "`Lifetimes<'_>` everywhere."
+let_underscore_drop = "`drop(x)` over `let _ = x` for every destructor. `let_underscore_lock` and `let_underscore_future` catch the risky ones."
 linker_info = "Harmless linker chatter, like `ld: ignoring duplicate libraries`."
 missing_debug_implementations = "`Debug` on every public type."
 unused_crate_dependencies = "Flags dev-dependencies in every target that does not use them."
