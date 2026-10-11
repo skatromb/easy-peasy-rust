@@ -1,6 +1,12 @@
 # Lints left at their default level with reason. `easy-peasy` never writes these.
 
 [rust]
+# Edition migrations
+rust_2018_compatibility = "`cargo fix --edition` turns it on for the migration."
+rust_2021_compatibility = "`cargo fix --edition` turns it on for the migration."
+rust_2024_compatibility = "`cargo fix --edition` turns it on for the migration."
+
+# Lints
 dead_code_pub_in_binary = "A test harness is a binary, so it flags library `pub` items tests skip; `dead_code` covers the rest."
 deprecated_in_future = "For std's own deprecations."
 elided_lifetimes_in_paths = "`Lifetimes<'_>` everywhere."
