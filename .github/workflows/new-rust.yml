@@ -20,7 +20,7 @@ defaults:
 
 jobs:
   checklist:
-    name: Post the release checklist
+    name: Release checklist
     if: github.event.action == 'opened' && github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
           EOF
 
   transferred:
-    name: Compare lints on transferred
+    name: Compare lints on `transferred`
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
