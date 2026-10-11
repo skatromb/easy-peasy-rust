@@ -21,12 +21,11 @@ CLONE = (
 )
 TARGET = Path(__file__).resolve().parents[1] / "clippy"
 DOCS = f"https://rust-lang.github.io/rust-clippy/{TAG}/index.html"
-DECLARATION = re.compile(
-    r'pub (\w+),(?:\s*//.*)*\s*(\w+),\s*(?:r#"(.*?)"#|"((?:[^"\\]|\\[\s\S])*)")'
+LINT = re.compile(
+    r"^\s+clippy::([a-z0-9-]+)\s+(?:allow|warn|deny)\s+(.*)$", re.MULTILINE
 )
-ESCAPE = re.compile(r"\\(.)", re.DOTALL)
+GROUP = re.compile(r"^\s+clippy::(\w+)\s+(clippy::.*)$", re.MULTILINE)
 GROUPS = ("cargo", "pedantic", "nursery", "restriction")
-Lint = tuple[str, str, str]
 HEAD = """# clippy {group}
 
 Every lint of the clippy `{group}` group as of Rust {rust}. All are allowed by default.
@@ -50,35 +49,33 @@ Every `clippy.toml` setting as of Rust {RUST}.
 """
 
 
-def lint_entry(declaration: tuple[str, str, str, str]) -> Lint:
-    name, group, raw_summary, summary = declaration
-    words = (raw_summary or ESCAPE.sub(r"\1", summary)).split()
-    return group, name.lower(), " ".join(words)
+def underscored(lint: str) -> str:
+    return lint.removeprefix("clippy::").replace("-", "_")
 
 
-def declared_lints(source: Path) -> list[Lint]:
-    declarations = (
-        declaration
-        for path in source.rglob("*.rs")
-        for declaration in DECLARATION.findall(path.read_text())
-    )
-    return sorted(map(lint_entry, declarations))
-
-
-def group_file(group: str, lints: list[Lint]) -> str:
+def group_file(group: str, members: str, summaries: dict[str, str]) -> str:
     rows = [
-        f"| [`{name}`]({DOCS}#{name}) | {summary} |\n"
-        for lint_group, name, summary in lints
-        if lint_group == group
+        f"| [`{name}`]({DOCS}#{name}) | {summaries[name]} |\n"
+        for name in sorted(map(underscored, members.split(", ")))
     ]
     return HEAD.format(group=group, rust=RUST) + "".join(rows)
 
 
-def write_groups(source: Path) -> None:
-    lints = declared_lints(source)
+def lint_summaries(lints: str) -> dict[str, str]:
+    return {underscored(name): summary for name, summary in LINT.findall(lints)}
+
+
+def write_groups() -> None:
+    lints, groups = subprocess.run(
+        ["clippy-driver", "-W", "help"], capture_output=True, text=True, check=True
+    ).stdout.split("Lint groups loaded by this crate:")
+    summaries = lint_summaries(lints)
+    members = dict(GROUP.findall(groups))
     TARGET.mkdir(parents=True, exist_ok=True)
     for group in GROUPS:
-        (TARGET / f"{group}.md").write_text(group_file(group, lints))
+        (TARGET / f"{group}.md").write_text(
+            group_file(group, members[group], summaries)
+        )
 
 
 def setting_row(name: str, description: str, default: str, affected: str) -> str:
@@ -95,9 +92,9 @@ def write_settings(book: Path) -> None:
 
 
 def main() -> None:
+    write_groups()
     with TemporaryDirectory() as clone:
         subprocess.run([*CLONE, REPO, clone], check=True)
-        write_groups(Path(clone) / "clippy_lints" / "src")
         write_settings(Path(clone) / "book" / "src")
 
 

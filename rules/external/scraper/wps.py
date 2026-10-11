@@ -1,21 +1,15 @@
 """Scrape every wemake-python-styleguide violation into ../wps, one file per group."""
 
-import ast
-import subprocess
+import inspect
+from importlib import import_module
+from importlib.metadata import version
+from operator import attrgetter
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
-REPO = "https://github.com/wemake-services/wemake-python-styleguide"
-TAG = "1.8.1"
-CLONE = (
-    "git",
-    "-c",
-    "advice.detachedHead=false",
-    "clone",
-    "-q",
-    "--depth=1",
-    f"--branch={TAG}",
-)
+from wemake_python_styleguide.violations.base import BaseViolation
+
+VERSION = version("wemake-python-styleguide")
+PACKAGE = "wemake_python_styleguide.violations"
 TARGET = Path(__file__).resolve().parents[1] / "wps"
 DOCS = (
     "https://wemake-python-styleguide.readthedocs.io/en/latest/pages/usage/violations/"
@@ -39,56 +33,43 @@ Disabled ones are struck through.
 """
 
 
-def class_constants(klass: ast.ClassDef) -> dict[str, object]:
-    return {
-        ast.unparse(stmt.targets[0]): stmt.value.value
-        for stmt in klass.body
-        if isinstance(stmt, ast.Assign) and isinstance(stmt.value, ast.Constant)
-    }
-
-
-def summary(klass: ast.ClassDef) -> str:
-    docstring = ast.get_docstring(klass) or ""
+def summary(violation: type[BaseViolation]) -> str:
+    docstring = (inspect.getdoc(violation) or "").removeprefix(
+        f"{violation.full_code} — "
+    )
     first_paragraph = docstring.split("\n\n")[0].replace("``", "`")
     return " ".join(first_paragraph.split())
 
 
-def violation_link(module: str, name: str, disabled: object) -> str:
-    anchor = f"{module}.html#wemake_python_styleguide.violations.{module}.{name}"
+def violation_link(module: str, name: str, disabled: str | None) -> str:
+    anchor = f"{module}.html#{PACKAGE}.{module}.{name}"
     link = f"[{name}]({DOCS}{anchor})"
     return f"~~{link}~~ disabled since {disabled}" if disabled else link
 
 
-def violation_row(module: str, klass: ast.ClassDef) -> tuple[int, str] | None:
-    constants = class_constants(klass)
-    code = constants.get("code")
-    if not isinstance(code, int):
-        return None
-    link = violation_link(module, klass.name, constants.get("disabled_since"))
-    description = summary(klass)
-    number = str(code).zfill(3)
-    return code, f"| WPS{number} | {link} | {description} |\n"
+def violation_row(module: str, violation: type[BaseViolation]) -> str:
+    link = violation_link(module, violation.__name__, violation.disabled_since)
+    number = str(violation.code).zfill(3)
+    return f"| WPS{number} | {link} | {summary(violation)} |\n"
 
 
-def group_rows(source: Path, module: str) -> list[str]:
-    tree = ast.parse((source / f"{module}.py").read_text())
-    classes = (node for node in tree.body if isinstance(node, ast.ClassDef))
-    rows = sorted(filter(None, (violation_row(module, klass) for klass in classes)))
-    return [line for _, line in rows]
-
-
-def write_groups(source: Path) -> None:
-    TARGET.mkdir(parents=True, exist_ok=True)
-    for module, codes, title in GROUPS:
-        head = HEAD.format(DOCS, codes, title, module, TAG)
-        target = TARGET / f"{codes}-{module.replace('_', '-')}.md"
-        target.write_text(head + "".join(group_rows(source, module)))
+def group_rows(module: str) -> list[str]:
+    namespace = import_module(f"{PACKAGE}.{module}")
+    violations = (
+        member
+        for _, member in inspect.getmembers(namespace, inspect.isclass)
+        if issubclass(member, BaseViolation) and member.__module__ == namespace.__name__
+    )
+    ordered = sorted(violations, key=attrgetter("code"))
+    return [violation_row(module, violation) for violation in ordered]
 
 
 def main() -> None:
-    with TemporaryDirectory() as clone:
-        subprocess.run([*CLONE, REPO, clone], check=True)
-        write_groups(Path(clone) / "wemake_python_styleguide" / "violations")
+    TARGET.mkdir(parents=True, exist_ok=True)
+    for module, codes, title in GROUPS:
+        head = HEAD.format(DOCS, codes, title, module, VERSION)
+        target = TARGET / f"{codes}-{module.replace('_', '-')}.md"
+        target.write_text(head + "".join(group_rows(module)))
 
 
 main()
