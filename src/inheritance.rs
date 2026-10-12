@@ -40,7 +40,7 @@ fn replace_own(
     if !block.ask(Question::Replace, choices)? {
         return Ok(());
     }
-    if !choices.diff {
+    if !choices.check {
         warn_dropped(&changed)?;
     }
     switch(changed, preset);

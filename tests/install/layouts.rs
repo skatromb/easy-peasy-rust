@@ -45,7 +45,7 @@ fn tells_what_a_member_dropped() {
 fn lists_every_workspace_member_in_one_block() {
     let dir = project("workspace");
 
-    let output = install(&dir, &["--diff"]);
+    let output = install(&dir, &["--check", "--drop-existing"]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout.matches("Workspace lints").count(), 1);

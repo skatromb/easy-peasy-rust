@@ -41,9 +41,9 @@ struct Choices {
     /// Overwrite completely your settings. With `--interactive` only changes the default answer.
     #[arg(long)]
     drop_existing: bool,
-    /// Print the diff from the preset, exit 1 if there is some.
-    #[arg(long, conflicts_with_all = ["interactive", "drop_existing"])]
-    diff: bool,
+    /// Print what a run would change, exit 1 if there is some.
+    #[arg(long, alias = "diff", conflicts_with = "interactive")]
+    check: bool,
 }
 
 fn main() -> Result<()> {
@@ -56,7 +56,7 @@ fn main() -> Result<()> {
     }
 
     let files = merged(&cli_args.path, choices)?;
-    if choices.diff {
+    if choices.check {
         return compare(&files);
     }
     save(&files)

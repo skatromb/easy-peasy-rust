@@ -66,8 +66,8 @@ fn matches_the_preset_after_yes_to_everything() {
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(!cargo_toml.contains("float_arithmetic"));
     assert!(cargo_toml.contains("broken_intra_doc_links"));
-    let diff = install(&dir, &["--diff"]);
-    assert_eq!(String::from_utf8(diff.stdout).unwrap(), MATCHING);
+    let check = install(&dir, &["--check", "--drop-existing"]);
+    assert_eq!(String::from_utf8(check.stdout).unwrap(), MATCHING);
 }
 
 #[test]
@@ -84,10 +84,26 @@ fn replaces_a_workspace_members_own_lints_on_yes() {
 }
 
 #[test]
-fn lists_differences_without_writing_with_diff() {
+fn lists_what_a_run_would_add_with_check() {
     let dir = project("crate");
 
-    let output = install(&dir, &["--diff"]);
+    let output = install(&dir, &["--check"]);
+
+    assert!(!output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("  clippy::panic: \"deny\"\n"));
+    assert!(!stdout.contains("clippy::unwrap_used"));
+    assert!(!stdout.contains("clippy::float_arithmetic"));
+    assert!(!stdout.contains("[Y/n]"));
+    assert_eq!(read(&dir, "Cargo.toml"), fixture("crate/Cargo.toml"));
+    assert_eq!(read(&dir, "clippy.toml"), fixture("crate/clippy.toml"));
+}
+
+#[test]
+fn lists_every_difference_with_check_and_drop_existing() {
+    let dir = project("crate");
+
+    let output = install(&dir, &["--check", "--drop-existing"]);
 
     assert!(!output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -125,6 +141,16 @@ fn adds_the_preset_and_keeps_yours_by_default() {
 }
 
 #[test]
+fn passes_check_after_a_default_run() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+
+    let check = install(&dir, &["--check"]);
+
+    assert_eq!(String::from_utf8(check.stdout).unwrap(), MATCHING);
+}
+
+#[test]
 fn applies_the_whole_preset_with_drop_existing() {
     let dir = project("crate");
 
@@ -134,8 +160,8 @@ fn applies_the_whole_preset_with_drop_existing() {
     assert!(stdout.contains("\n  Replaced No panics: clippy::unwrap_used\n"));
     assert!(stdout.contains("\n  Removed Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
     assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
-    let diff = install(&dir, &["--diff"]);
-    assert_eq!(String::from_utf8(diff.stdout).unwrap(), MATCHING);
+    let check = install(&dir, &["--check", "--drop-existing"]);
+    assert_eq!(String::from_utf8(check.stdout).unwrap(), MATCHING);
 }
 
 fn answer(mut session: PtySession, reply: &str) -> Vec<String> {

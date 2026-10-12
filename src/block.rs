@@ -133,11 +133,12 @@ impl Block {
     }
 
     pub(crate) fn ask(&mut self, question: Question, choices: Choices) -> Result<bool> {
-        if self.changes.is_empty() {
+        if self.changes.is_empty() || choices.check && !question.default(choices) {
+            self.changes.clear();
             return Ok(false);
         }
         QUIET.store(false, Ordering::Relaxed);
-        if !choices.interactive && !choices.diff {
+        if !choices.interactive && !choices.check {
             return self.summarize(question, choices);
         }
 
@@ -151,7 +152,7 @@ impl Block {
             writeln!(out, "    {label}: {detail}")?;
         }
 
-        Ok(choices.diff || answer(&mut out, question, choices)?)
+        Ok(choices.check || answer(&mut out, question, choices)?)
     }
 
     fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {

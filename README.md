@@ -19,7 +19,7 @@ cargo install easy-peasy-rust
 cargo easy-peasy [path]           # add what you lack, keep your lints
 cargo easy-peasy --drop-existing  # apply the whole preset, drop your other lints
 cargo easy-peasy --interactive    # ask about each block of lint rules that differs
-cargo easy-peasy --diff           # only print the diff and fail on some
+cargo easy-peasy --check          # print what a run would change, fail if any
 ```
 
 Then use your IDE as usual or run clippy manually:
