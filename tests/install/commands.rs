@@ -40,7 +40,7 @@ fn asks_about_each_block() {
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));
     assert!(cargo_toml.contains("float_arithmetic = \"allow\"\n"));
     let clippy_toml = read(&dir, "clippy.toml");
-    assert!(clippy_toml.contains("cognitive-complexity-threshold = 12"));
+    assert!(clippy_toml.contains("cognitive-complexity-threshold = 6"));
     assert!(clippy_toml.contains("too-many-lines-threshold = 50"));
 }
 

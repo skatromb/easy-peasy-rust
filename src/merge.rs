@@ -143,21 +143,14 @@ fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) 
     let mut block = Block::new(kind, title.unwrap_or_default());
     let (missing, changed) = differing(target, preset);
 
-    for (key, setting) in &missing {
-        block.push(key.get(), None, Some(setting));
-    }
-    if block.ask(Question::Adopt, choices)? {
-        for (key, setting) in missing {
-            let _ = target.insert(key.get(), setting);
+    for (settings, question) in [(missing, Question::Adopt), (changed, Question::Replace)] {
+        for (key, setting) in &settings {
+            block.push(key.get(), target.get(key.get()), Some(setting));
         }
-    }
-
-    for (key, setting) in &changed {
-        block.push(key.get(), target.get(key.get()), Some(setting));
-    }
-    if block.ask(Question::Replace, choices)? {
-        for (key, setting) in changed {
-            target[key.get()] = setting;
+        if block.ask(question, choices)? {
+            for (key, setting) in settings {
+                let _ = target.insert(key.get(), setting);
+            }
         }
     }
     Ok(())

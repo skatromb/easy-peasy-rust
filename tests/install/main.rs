@@ -1,5 +1,9 @@
 //! Runs `cargo easy-peasy` on copies of `tests/fixtures` and checks what it writes.
 #![cfg(test)]
+#![expect(
+    clippy::cognitive_complexity,
+    reason = "Each `assert!` counts as a branch, and tests check many lines of output"
+)]
 
 mod commands;
 mod layouts;
