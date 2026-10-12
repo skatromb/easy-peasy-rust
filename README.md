@@ -22,7 +22,7 @@ cargo easy-peasy --interactive    # ask about each block of lint rules that diff
 cargo easy-peasy --diff           # only print the diff and fail on some
 ```
 
-Then use your IDE as usual or run clippy manually:
+Then let your IDE run clippy, or run it yourself:
 
 ```sh
 cargo clippy --workspace --all-targets
@@ -34,13 +34,10 @@ Every lint pick is explained in [`lints.toml`](rules/lints.toml) and [`clippy.to
 
 ## What it writes
 
-- `[workspace.lints.rust]` and `[workspace.lints.clippy]` into the root `Cargo.toml` (`[lints.*]` for a single crate),
-- `[lints] workspace = true` into every member crate, the root package included,
-- the settings into `clippy.toml`, or into `.clippy.toml` if that is what you have.
+- `Cargo.toml`: the preset lints, and `[lints] workspace = true` in every member crate
+- `clippy.toml`: lint settings
 
-Each preset block gets a `# easy-peasy: <block>` header, in the preset's order, and your own lints and settings go below them under `# easy-peasy: yours`.
-
-Lints of other tools, like `[lints.rustdoc]`, are never touched.
+Your own lints and settings stay below a `# easy-peasy: yours` header.
 
 ## Overriding
 
@@ -50,7 +47,7 @@ Per crate, at the top of `src/lib.rs` or `src/main.rs`:
 #![allow(clippy::some_lint)]
 ```
 
-Cargo does not allow a member to combine `workspace = true` with its own lint keys.
+Cargo forbids own lint keys next to `workspace = true`.
 
 Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold in `clippy.toml`. The next `cargo easy-peasy` keeps it, `--drop-existing` resets it.
 
