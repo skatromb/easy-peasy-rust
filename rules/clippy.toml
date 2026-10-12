@@ -28,7 +28,7 @@ struct-field-name-threshold = 2 # `{ user_id, user_name }` says user twice.
 upper-case-acronyms-aggressive = true # `XmlParser` over `XMLParser`, `Http` over `HTTP`.
 
 # easy-peasy: Complexity
-cognitive-complexity-threshold = 12 # WPS231.
+cognitive-complexity-threshold = 6 # WPS231. Lint counts complexity very differently.
 excessive-nesting-threshold = 4 # WPS220 is 5.
 lint-commented-code = true # A comment does not stop collapsing an `if`, the fix keeps it.
 max-fn-params-bools = 0 # WPS425: no keyword arguments, so no bool parameters.
