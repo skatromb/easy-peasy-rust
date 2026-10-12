@@ -105,7 +105,7 @@ fn lay_out(target: &mut Table, preset: &Table) {
         let comments = own.map(unmarked).unwrap_or_default();
         first
             .leaf_decor_mut()
-            .set_prefix(format!("{gap}{MARK} yours\n{comments}"));
+            .set_prefix(format!("{gap}{comments}"));
     }
 }
 

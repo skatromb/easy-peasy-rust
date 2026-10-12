@@ -116,7 +116,7 @@ fn adds_the_preset_and_keeps_yours_by_default() {
     assert!(
         cargo_toml.contains("\n\n# easy-peasy: No panics\narithmetic_side_effects = \"warn\"\n")
     );
-    assert!(cargo_toml.contains("\n\n# easy-peasy: yours\nfloat_arithmetic = \"allow\"\n"));
+    assert!(cargo_toml.contains("\n\nfloat_arithmetic = \"allow\"\n"));
     assert!(cargo_toml.contains("\n[lints.rust]\n"));
     let clippy_toml = read(&dir, "clippy.toml");
     assert!(clippy_toml.contains("too-many-lines-threshold = 50"));
