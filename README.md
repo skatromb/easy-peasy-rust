@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/crates/d/easy-peasy-rust.svg)](https://crates.io/crates/easy-peasy-rust)
 [![easy-peasy-rust](https://img.shields.io/badge/style-easy--peasy-fecc02.svg)](https://github.com/skatromb/easy-peasy-rust)
 
-An opinionated lint preset for Rust that keeps human- and AI-written code readable.
+An opinionated lint preset for Rust. Keeps human- and AI-written code readable.
 
 Inspired by [wemake-python-styleguide](https://wemake-python-styleguide.readthedocs.io/).
 
