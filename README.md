@@ -37,8 +37,6 @@ Every lint pick is explained in [`lints.toml`](rules/lints.toml) and [`clippy.to
 - `Cargo.toml`: the preset lints, and `[lints] workspace = true` in every member crate
 - `clippy.toml`: lint settings
 
-Your own lints and settings stay below a `# easy-peasy: yours` header.
-
 ## Overriding
 
 Per crate, at the top of `src/lib.rs` or `src/main.rs`:
