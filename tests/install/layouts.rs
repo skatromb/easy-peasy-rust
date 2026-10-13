@@ -77,7 +77,7 @@ fn merges_into_a_hidden_clippy_toml() {
 
     assert!(install(&dir, &[]).status.success());
 
-    assert!(read(&dir, ".clippy.toml").contains("cognitive-complexity-threshold = 6"));
+    assert!(read(&dir, ".clippy.toml").contains("cognitive-complexity-threshold = 12"));
     assert!(!dir.path().join("clippy.toml").exists());
 }
 
