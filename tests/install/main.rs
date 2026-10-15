@@ -3,6 +3,7 @@
 
 mod commands;
 mod layouts;
+mod readme;
 mod toolchains;
 
 use std::fs;
