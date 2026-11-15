@@ -14,6 +14,7 @@ ALLOWED = re.compile(r'<h2 id="allowed-by-default".*?<ul>(.*?)</ul>', re.DOTALL)
 NAME = re.compile(r"<code>([a-z0-9_]+)</code>")
 CODE = re.compile(r"</?code>")
 TAG = re.compile(r"<[^>]+>")
+GROUPS = ("pedantic", "restriction")
 HEAD = """# Cargo {group}
 
 Every lint of the Cargo `{group}` group that is allowed by default as of Rust {rust}.
@@ -56,7 +57,10 @@ def group(lint: str, page: str) -> str:
     )
     if section is None:
         raise ValueError(f"No group of `{lint}` in {SOURCE}")
-    return section.group(1)
+    name = section.group(1)
+    if name not in GROUPS:
+        raise ValueError(f"`{lint}` is in `{name}`, add it to tests/preset.rs")
+    return name
 
 
 def lint_row(lint: str, page: str) -> str:
