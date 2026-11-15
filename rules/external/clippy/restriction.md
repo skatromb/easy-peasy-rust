@@ -1,6 +1,6 @@
 # clippy restriction
 
-Every lint of the clippy `restriction` group as of Rust 1.99. All are allowed by default.
+Every lint of the clippy `restriction` group as of Rust 1.100. All are allowed by default.
 
 | Lint | Description |
 | --- | --- |

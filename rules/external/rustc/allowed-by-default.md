@@ -1,6 +1,6 @@
 # rustc allowed by default
 
-Every stable rustc lint that is allowed by default as of Rust 1.99, besides edition migrations that `cargo fix --edition` turns on.
+Every stable rustc lint that is allowed by default as of Rust 1.100, besides edition migrations that `cargo fix --edition` turns on.
 
 | Lint | Description |
 | --- | --- |
@@ -47,4 +47,4 @@ Every stable rustc lint that is allowed by default as of Rust 1.99, besides edit
 | --- | --- |
 | [`rust_2018_compatibility`](https://doc.rust-lang.org/stable/rustc/lints/groups.html) | `keyword_idents_2018`, `anonymous_parameters`, `absolute_paths_not_starting_with_crate`, `tyvar_behind_raw_pointer` |
 | [`rust_2021_compatibility`](https://doc.rust-lang.org/stable/rustc/lints/groups.html) | `ellipsis_inclusive_range_patterns`, `non_fmt_panics`, `array_into_iter`, `bare_trait_objects`, `rust_2021_incompatible_closure_captures`, `rust_2021_incompatible_or_patterns`, `rust_2021_prefixes_incompatible_syntax`, `rust_2021_prelude_collisions` |
-| [`rust_2024_compatibility`](https://doc.rust-lang.org/stable/rustc/lints/groups.html) | `keyword_idents_2024`, `edition_2024_expr_fragment_specifier`, `if_let_rescope`, `impl_trait_overcaptures`, `boxed_slice_into_iter`, `static_mut_refs`, `dependency_on_unit_never_type_fallback`, `deprecated_safe_2024`, `missing_unsafe_on_extern`, `never_type_fallback_flowing_into_unsafe`, `rust_2024_guarded_string_incompatible_syntax`, `rust_2024_incompatible_pat`, `rust_2024_prelude_collisions`, `tail_expr_drop_order`, `unsafe_attr_outside_unsafe`, `unsafe_op_in_unsafe_fn` |
+| [`rust_2024_compatibility`](https://doc.rust-lang.org/stable/rustc/lints/groups.html) | `keyword_idents_2024`, `edition_2024_expr_fragment_specifier`, `if_let_rescope`, `impl_trait_overcaptures`, `boxed_slice_into_iter`, `static_mut_refs`, `deprecated_safe_2024`, `missing_unsafe_on_extern`, `rust_2024_guarded_string_incompatible_syntax`, `rust_2024_incompatible_pat`, `rust_2024_prelude_collisions`, `tail_expr_drop_order`, `unsafe_attr_outside_unsafe`, `unsafe_op_in_unsafe_fn` |

@@ -1,6 +1,6 @@
 # clippy pedantic
 
-Every lint of the clippy `pedantic` group as of Rust 1.99. All are allowed by default.
+Every lint of the clippy `pedantic` group as of Rust 1.100. All are allowed by default.
 
 | Lint | Description |
 | --- | --- |
@@ -73,7 +73,7 @@ Every lint of the clippy `pedantic` group as of Rust 1.99. All are allowed by de
 | [`manual_midpoint`](https://rust-lang.github.io/rust-clippy/stable/index.html#manual_midpoint) | manual implementation of `midpoint` which can overflow |
 | [`manual_string_new`](https://rust-lang.github.io/rust-clippy/stable/index.html#manual_string_new) | empty String is being created manually |
 | [`many_single_char_names`](https://rust-lang.github.io/rust-clippy/stable/index.html#many_single_char_names) | too many single character bindings |
-| [`map_unwrap_or`](https://rust-lang.github.io/rust-clippy/stable/index.html#map_unwrap_or) | using `.map(f).unwrap_or(a)` or `.map(f).unwrap_or_else(func)`, which are more succinctly expressed as `map_or(a, f)` or `map_or_else(a, f)` |
+| [`map_unwrap_or`](https://rust-lang.github.io/rust-clippy/stable/index.html#map_unwrap_or) | using `.map(f).unwrap_or(a)`, `map(f).unwrap_or_default()` or `.map(f).unwrap_or_else(func)`, which are more succinctly expressed as `map_or(a, f)`, `map_or_default(f)` or `map_or_else(a, f)` |
 | [`match_bool`](https://rust-lang.github.io/rust-clippy/stable/index.html#match_bool) | a `match` on a boolean expression instead of an `if..else` block |
 | [`match_same_arms`](https://rust-lang.github.io/rust-clippy/stable/index.html#match_same_arms) | `match` with identical arm bodies |
 | [`match_wild_err_arm`](https://rust-lang.github.io/rust-clippy/stable/index.html#match_wild_err_arm) | a `match` with `Err(_)` arm and take drastic actions |
