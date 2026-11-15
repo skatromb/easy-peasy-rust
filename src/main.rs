@@ -75,7 +75,7 @@ fn save(files: &[TomlFile]) -> Result<()> {
     files.iter().try_for_each(TomlFile::save)?;
     writeln!(
         stdout(),
-        "Run `cargo clippy --workspace --all-targets` and `cargo doc --no-deps` to see what it flags."
+        "Run `cargo clippy --workspace --all-targets` and `cargo doc --workspace --no-deps` to see what it flags."
     )?;
     Ok(())
 }

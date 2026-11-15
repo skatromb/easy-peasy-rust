@@ -26,7 +26,7 @@ Then let your IDE run clippy, or run it yourself:
 
 ```sh
 cargo clippy --workspace --all-targets
-cargo doc --no-deps  # rustdoc lints
+cargo doc --workspace --no-deps  # rustdoc lints
 ```
 
 ## Example
