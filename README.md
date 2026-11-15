@@ -22,6 +22,8 @@ cargo easy-peasy --interactive    # ask about each block of lint rules that diff
 cargo easy-peasy --check          # print what a run would change, fail if any
 ```
 
+`easy-peasy` keeps its lints in `# easy-peasy:` blocks and removes from them what it no longer sets. Keep your own lints and settings below them.
+
 Then let your IDE run clippy, or run it yourself:
 
 ```sh

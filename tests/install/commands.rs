@@ -1,4 +1,7 @@
+use std::fs;
+
 use rexpect::session::PtySession;
+use tempfile::TempDir;
 
 use super::{ask, clippy_is_silent, fixture, install, project, read};
 
@@ -167,6 +170,60 @@ fn applies_the_whole_preset_with_drop_existing() {
     assert!(!read(&dir, "Cargo.toml").contains("float_arithmetic"));
     let check = install(&dir, &["--check", "--drop-existing"]);
     assert_eq!(String::from_utf8(check.stdout).unwrap(), MATCHING);
+}
+
+#[test]
+fn removes_what_the_preset_dropped_and_keeps_yours() {
+    let dir = project("crate");
+    let installed = with_old_preset_lines(&dir);
+
+    let output = install(&dir, &[]);
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("\n  Removed Old `easy-peasy-rust` settings: 1 setting\n"));
+    assert!(stdout.contains("\n  Removed Old `easy-peasy-rust` clippy lints: 1 lint\n"));
+    assert!(stdout.contains("\n  Kept Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
+    assert_eq!(
+        [read(&dir, "Cargo.toml"), read(&dir, "clippy.toml")],
+        installed
+    );
+}
+
+#[test]
+fn asks_to_remove_what_the_preset_dropped() {
+    let dir = project("crate");
+    let installed = with_old_preset_lines(&dir);
+
+    let questions = answer(ask(&dir), "");
+
+    let old = questions
+        .iter()
+        .find(|asked| asked.contains("Old `easy-peasy-rust` clippy lints"));
+    assert!(
+        old.unwrap()
+            .contains("clippy::cast_abs_to_unsigned: \"deny\"")
+    );
+    assert!(old.unwrap().contains("Remove? [Y/n]"));
+    assert_eq!(
+        [read(&dir, "Cargo.toml"), read(&dir, "clippy.toml")],
+        installed
+    );
+}
+
+fn with_old_preset_lines(dir: &TempDir) -> [String; 2] {
+    assert!(install(dir, &[]).status.success());
+    let installed = [read(dir, "Cargo.toml"), read(dir, "clippy.toml")];
+    let lint = "arithmetic_side_effects = \"warn\"\n";
+    let setting = "max-fn-params-bools = 0\n";
+    let [cargo_toml, clippy_toml] = &installed;
+    let old_cargo_toml =
+        cargo_toml.replace(lint, &format!("{lint}cast_abs_to_unsigned = \"deny\"\n"));
+    let old_clippy_toml = clippy_toml
+        .replace(setting, &format!("{setting}max-struct-bools = 1\n"))
+        .replace("\nmsrv", "\n# easy-peasy: yours\nmsrv");
+    fs::write(dir.path().join("Cargo.toml"), old_cargo_toml).unwrap();
+    fs::write(dir.path().join("clippy.toml"), old_clippy_toml).unwrap();
+    installed
 }
 
 fn answer(mut session: PtySession, reply: &str) -> Vec<String> {
