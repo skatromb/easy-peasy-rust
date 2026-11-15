@@ -20,6 +20,7 @@ const PEDANTIC: &str = include_str!("../rules/external/clippy/pedantic.md");
 const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 const SETTINGS: &str = include_str!("../rules/external/clippy/settings.md");
 const RUSTC: &str = include_str!("../rules/external/rustc/allowed-by-default.md");
+const TOOLCHAIN: &str = include_str!("../rust-toolchain.toml");
 const GROUPS: [&str; 9] = [
     "cargo",
     "complexity",
@@ -57,6 +58,21 @@ fn entries(document: &DocumentMut) -> BTreeSet<String> {
             names.map(move |(name, _)| format!("{section}.{name}"))
         })
         .collect()
+}
+
+#[test]
+fn listings_match_toolchain() {
+    let toolchain: DocumentMut = TOOLCHAIN.parse().unwrap();
+    let rust = toolchain["toolchain"]["channel"].as_str().unwrap();
+    for listing in [CARGO, NURSERY, PEDANTIC, RESTRICTION, SETTINGS, RUSTC] {
+        let (_, header) = listing.split_once("as of Rust ").unwrap();
+        let scraped = header
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .trim_end_matches([',', '.']);
+        assert_eq!(scraped, rust, "run `make scrape` for Rust {rust}");
+    }
 }
 
 #[test]

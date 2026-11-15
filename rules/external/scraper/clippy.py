@@ -20,7 +20,7 @@ CLONE = (
     f"--branch={TAG}",
 )
 TARGET = Path(__file__).resolve().parents[1] / "clippy"
-DOCS = f"https://rust-lang.github.io/rust-clippy/{TAG}/index.html"
+DOCS = "https://rust-lang.github.io/rust-clippy/stable/index.html"
 LINT = re.compile(
     r"^\s+clippy::([a-z0-9-]+)\s+(?:allow|warn|deny)\s+(.*)$", re.MULTILINE
 )
