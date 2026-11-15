@@ -121,11 +121,16 @@ fn tool_decided(
     required: &[&'static str],
     known: &[&'static str],
 ) {
-    let with_groups = |listings: &[&'static str]| {
-        let lints = listings.iter().flat_map(|listing| listed(listing));
-        lints.chain(groups.iter().copied()).collect()
-    };
-    assert_decided(sections(tool), &with_groups(required), &with_groups(known));
+    assert_decided(
+        sections(tool),
+        &with_groups(required, groups),
+        &with_groups(known, groups),
+    );
+}
+
+fn with_groups(listings: &[&'static str], groups: &[&'static str]) -> BTreeSet<&'static str> {
+    let lints = listings.iter().copied().flat_map(listed);
+    lints.chain(groups.iter().copied()).collect()
 }
 
 fn sections(tool: &str) -> [&'static str; 2] {
