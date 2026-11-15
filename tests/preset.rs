@@ -97,30 +97,40 @@ fn listings_match_toolchain() {
 }
 
 #[test]
-fn every_clippy_lint_decided() {
-    let required = listed(RESTRICTION).into_iter().chain(CLIPPY_GROUPS);
-    let listings = [CARGO, NURSERY, PEDANTIC, RESTRICTION];
-    let known = listings.into_iter().flat_map(listed).chain(CLIPPY_GROUPS);
-    assert_decided(sections("clippy"), &required.collect(), &known.collect());
+fn every_lint_decided() {
+    tool_decided("rust", &[], &[RUSTC], &[RUSTC]);
+    tool_decided(
+        "clippy",
+        &CLIPPY_GROUPS,
+        &[RESTRICTION],
+        &[CARGO, NURSERY, PEDANTIC, RESTRICTION],
+    );
+    tool_decided("rustdoc", &["all"], &[], &[RUSTDOC]);
+    tool_decided(
+        "cargo",
+        &CARGO_GROUPS,
+        &[CARGO_RESTRICTION],
+        &[CARGO_PEDANTIC, CARGO_RESTRICTION],
+    );
 }
 
-#[test]
-fn every_rustc_lint_decided() {
-    assert_decided(sections("rust"), &listed(RUSTC), &listed(RUSTC));
+#[track_caller]
+fn tool_decided(
+    tool: &str,
+    groups: &[&'static str],
+    required: &[&'static str],
+    known: &[&'static str],
+) {
+    assert_decided(
+        sections(tool),
+        &with_groups(required, groups),
+        &with_groups(known, groups),
+    );
 }
 
-#[test]
-fn every_rustdoc_lint_decided() {
-    let known = listed(RUSTDOC).into_iter().chain(["all"]);
-    assert_decided(sections("rustdoc"), &["all"].into(), &known.collect());
-}
-
-#[test]
-fn every_cargo_lint_decided() {
-    let required = listed(CARGO_RESTRICTION).into_iter().chain(CARGO_GROUPS);
-    let listings = [CARGO_PEDANTIC, CARGO_RESTRICTION];
-    let known = listings.into_iter().flat_map(listed).chain(CARGO_GROUPS);
-    assert_decided(sections("cargo"), &required.collect(), &known.collect());
+fn with_groups(listings: &[&'static str], groups: &[&'static str]) -> BTreeSet<&'static str> {
+    let lints = listings.iter().copied().flat_map(listed);
+    lints.chain(groups.iter().copied()).collect()
 }
 
 fn sections(tool: &str) -> [&'static str; 2] {
@@ -141,16 +151,17 @@ fn every_clippy_setting_decided() {
     );
 }
 
+#[track_caller]
 fn assert_decided(files: [&str; 2], required: &BTreeSet<&str>, known: &BTreeSet<&str>) {
-    let [preset, defaults] =
+    let [picked, skipped] =
         files.map(|file| file.lines().filter_map(name).collect::<BTreeSet<_>>());
-    let decided = &preset | &defaults;
-    let undecided: Vec<&&str> = required.difference(&decided).collect();
-    let unknown: Vec<&&str> = decided.difference(known).collect();
-    let twice: Vec<&&str> = preset.intersection(&defaults).collect();
+    let unpicked: BTreeSet<&str> = required.difference(&picked).copied().collect();
+    let unknown: Vec<&&str> = picked.difference(known).collect();
+    let undecided: Vec<&&str> = unpicked.difference(&skipped).collect();
+    let stray: Vec<&&str> = skipped.difference(&unpicked).collect();
     assert!(
-        undecided.is_empty() && unknown.is_empty() && twice.is_empty(),
-        "undecided: {undecided:?}, unknown: {unknown:?}, twice: {twice:?}"
+        unknown.is_empty() && undecided.is_empty() && stray.is_empty(),
+        "unknown: {unknown:?}, undecided: {undecided:?}, stray: {stray:?}"
     );
 }
 
