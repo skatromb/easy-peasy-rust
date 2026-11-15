@@ -59,7 +59,9 @@ def group(lint: str, page: str) -> str:
         raise ValueError(f"No group of `{lint}` in {SOURCE}")
     name = section.group(1)
     if name not in GROUPS:
-        raise ValueError(f"`{lint}` is in `{name}`, add it to tests/preset.rs")
+        raise ValueError(
+            f"`{lint}` is in `{name}`, add it to GROUPS and tests/preset.rs"
+        )
     return name
 
 
