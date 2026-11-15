@@ -173,8 +173,8 @@ unseparated_literal_suffix = "warn" # `1_u32` over `1u32`.
 
 [rustdoc]
 # easy-peasy: Docs
-private_doc_tests = "warn" # A doc test cannot call a private item. Use `#[test]`.
-unescaped_backticks = "warn" # A lone backtick breaks inline code.
+all = { level = "warn", priority = -1 } # Every stable rustdoc lint.
+missing_crate_level_docs = "allow" # Duplicates rustc `missing_docs`.
 
 [cargo]
 # easy-peasy: Manifest

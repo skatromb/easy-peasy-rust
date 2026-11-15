@@ -111,7 +111,8 @@ fn every_rustc_lint_decided() {
 
 #[test]
 fn every_rustdoc_lint_decided() {
-    assert_decided(sections("rustdoc"), &listed(RUSTDOC), &listed(RUSTDOC));
+    let known = listed(RUSTDOC).into_iter().chain(["all"]);
+    assert_decided(sections("rustdoc"), &["all"].into(), &known.collect());
 }
 
 #[test]
@@ -125,8 +126,9 @@ fn every_cargo_lint_decided() {
 fn sections(tool: &str) -> [&'static str; 2] {
     let header = format!("[{tool}]\n");
     [PRESETS[0], DEFAULTS[0]].map(|lints| {
-        let (_, rest) = lints.split_once(&header).unwrap();
-        rest.split("\n[").next().unwrap()
+        lints
+            .split_once(&header)
+            .map_or("", |(_, rest)| rest.split("\n[").next().unwrap())
     })
 }
 
