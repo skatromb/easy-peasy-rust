@@ -97,30 +97,34 @@ fn listings_match_toolchain() {
 }
 
 #[test]
-fn every_clippy_lint_decided() {
-    let required = listed(RESTRICTION).into_iter().chain(CLIPPY_GROUPS);
-    let listings = [CARGO, NURSERY, PEDANTIC, RESTRICTION];
-    let known = listings.into_iter().flat_map(listed).chain(CLIPPY_GROUPS);
-    assert_decided(sections("clippy"), &required.collect(), &known.collect());
+fn every_lint_decided() {
+    tool_decided("rust", &[], &[RUSTC], &[RUSTC]);
+    tool_decided(
+        "clippy",
+        &CLIPPY_GROUPS,
+        &[RESTRICTION],
+        &[CARGO, NURSERY, PEDANTIC, RESTRICTION],
+    );
+    tool_decided("rustdoc", &["all"], &[], &[RUSTDOC]);
+    tool_decided(
+        "cargo",
+        &CARGO_GROUPS,
+        &[CARGO_RESTRICTION],
+        &[CARGO_PEDANTIC, CARGO_RESTRICTION],
+    );
 }
 
-#[test]
-fn every_rustc_lint_decided() {
-    assert_decided(sections("rust"), &listed(RUSTC), &listed(RUSTC));
-}
-
-#[test]
-fn every_rustdoc_lint_decided() {
-    let known = listed(RUSTDOC).into_iter().chain(["all"]);
-    assert_decided(sections("rustdoc"), &["all"].into(), &known.collect());
-}
-
-#[test]
-fn every_cargo_lint_decided() {
-    let required = listed(CARGO_RESTRICTION).into_iter().chain(CARGO_GROUPS);
-    let listings = [CARGO_PEDANTIC, CARGO_RESTRICTION];
-    let known = listings.into_iter().flat_map(listed).chain(CARGO_GROUPS);
-    assert_decided(sections("cargo"), &required.collect(), &known.collect());
+fn tool_decided(
+    tool: &str,
+    groups: &[&'static str],
+    required: &[&'static str],
+    known: &[&'static str],
+) {
+    let with_groups = |listings: &[&'static str]| {
+        let lints = listings.iter().flat_map(|listing| listed(listing));
+        lints.chain(groups.iter().copied()).collect()
+    };
+    assert_decided(sections(tool), &with_groups(required), &with_groups(known));
 }
 
 fn sections(tool: &str) -> [&'static str; 2] {
