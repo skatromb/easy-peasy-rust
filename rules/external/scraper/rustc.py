@@ -9,8 +9,8 @@ from tempfile import TemporaryDirectory
 from toolchain import RUST
 
 TARGET = Path(__file__).resolve().parents[1] / "rustc"
-DOCS = f"https://doc.rust-lang.org/{RUST}.0/rustc/lints/listing/allowed-by-default.html"
-GROUPS_DOCS = f"https://doc.rust-lang.org/{RUST}.0/rustc/lints/groups.html"
+DOCS = "https://doc.rust-lang.org/stable/rustc/lints/listing/allowed-by-default.html"
+GROUPS_DOCS = "https://doc.rust-lang.org/stable/rustc/lints/groups.html"
 ALLOWED_LINT = re.compile(r"^\s+([a-z0-9-]+)\s+allow\s+(.*)$", re.MULTILINE)
 MIGRATION_GROUP = re.compile(r"^\s+(rust-\d+-compatibility)\s+(.*)$", re.MULTILINE)
 UNSTABLE_LINT = re.compile(r"the `([a-z0-9_]+)` lint is unstable")
