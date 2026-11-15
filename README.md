@@ -105,7 +105,7 @@ Per workspace: set the lint to `"allow"` in `Cargo.toml`, or change a threshold 
 
 ## Versioning
 
-`1.99.x` has the lints of Rust 1.99. Older toolchains get only the lints and settings they know, per [`validity.toml`](rules/validity.toml): upgrade Rust and rerun `cargo easy-peasy` to add the rest.
+`1.100.x` has the lints of Rust 1.100. Older toolchains get only the lints and settings they know, per [`validity.toml`](rules/validity.toml): upgrade Rust and rerun `cargo easy-peasy` to add the rest.
 
 ## Badge
 
