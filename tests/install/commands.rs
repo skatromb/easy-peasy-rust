@@ -32,9 +32,10 @@ fn asks_about_each_block() {
         .iter()
         .find(|asked| asked.contains("clippy::unwrap_used"));
     assert!(yours.unwrap().contains("Replace yours? [y/N]"));
-    let extras = questions.last().unwrap();
-    assert!(extras.contains("Your clippy lints not in `easy-peasy-rust`"));
-    assert!(extras.contains("clippy::float_arithmetic"));
+    let extras = questions
+        .iter()
+        .find(|asked| asked.contains("Your clippy lints not in `easy-peasy-rust`"));
+    assert!(extras.unwrap().contains("clippy::float_arithmetic"));
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(cargo_toml.contains("expect_used = \"deny\"\n"));
     assert!(cargo_toml.contains("unwrap_used = \"allow\"\n"));

@@ -128,14 +128,14 @@ fn rearranges_moved_lints() {
     let dir = project("crate");
     assert!(install(&dir, &[]).status.success());
     let installed = read(&dir, "Cargo.toml");
-    let lint = "ffi_unwind_calls = \"warn\"\n";
+    let lint = "manual_readme = \"warn\"\n";
     let moved = format!("{}{lint}", installed.replace(lint, ""));
     fs::write(dir.path().join("Cargo.toml"), moved).unwrap();
 
     let output = install(&dir, &[]);
 
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("\n  Rearranged rust lints to the preset's layout\n"));
+    assert!(stdout.contains("\n  Rearranged cargo lints to the preset's layout\n"));
     assert_eq!(read(&dir, "Cargo.toml"), installed);
 }
 

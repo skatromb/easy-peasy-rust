@@ -170,3 +170,10 @@ large_include_file = "warn" # Threshold in clippy.toml.
 redundant_type_annotations = "warn" # `let x: String = String::new()`.
 semicolon_inside_block = "warn" # `{ x; }`: temporaries drop at once.
 unseparated_literal_suffix = "warn" # `1_u32` over `1u32`.
+
+[cargo]
+# easy-peasy: Manifest
+manual_readme = "warn" # Cargo finds `README.md` on its own.
+non_kebab_case_bins = "warn" # `my-tool`, like most command line tools.
+non_kebab_case_features = "warn" # One style, the one most top crates use.
+non_kebab_case_packages = "warn" # Same.

@@ -20,6 +20,16 @@ const PEDANTIC: &str = include_str!("../rules/external/clippy/pedantic.md");
 const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 const SETTINGS: &str = include_str!("../rules/external/clippy/settings.md");
 const RUSTC: &str = include_str!("../rules/external/rustc/allowed-by-default.md");
+const CARGO_LINTS: &str = include_str!("../rules/external/cargo/allowed-by-default.md");
+const LISTINGS: [&str; 7] = [
+    CARGO,
+    NURSERY,
+    PEDANTIC,
+    RESTRICTION,
+    SETTINGS,
+    RUSTC,
+    CARGO_LINTS,
+];
 const TOOLCHAIN: &str = include_str!("../rust-toolchain.toml");
 const GROUPS: [&str; 9] = [
     "cargo",
@@ -64,7 +74,7 @@ fn entries(document: &DocumentMut) -> BTreeSet<String> {
 fn listings_match_toolchain() {
     let toolchain: DocumentMut = TOOLCHAIN.parse().unwrap();
     let rust = toolchain["toolchain"]["channel"].as_str().unwrap();
-    for listing in [CARGO, NURSERY, PEDANTIC, RESTRICTION, SETTINGS, RUSTC] {
+    for listing in LISTINGS {
         let (_, header) = listing.split_once("as of Rust ").unwrap();
         let scraped = header
             .split_whitespace()
@@ -77,17 +87,32 @@ fn listings_match_toolchain() {
 
 #[test]
 fn every_clippy_lint_decided() {
-    let files = [PRESETS[0], DEFAULTS[0]].map(|lints| lints.split_once("[clippy]").unwrap().1);
     let required = listed(RESTRICTION).into_iter().chain(GROUPS);
     let listings = [CARGO, NURSERY, PEDANTIC, RESTRICTION];
     let known = listings.into_iter().flat_map(listed).chain(GROUPS);
-    assert_decided(files, &required.collect(), &known.collect());
+    assert_decided(sections("clippy"), &required.collect(), &known.collect());
 }
 
 #[test]
 fn every_rustc_lint_decided() {
-    let files = [PRESETS[0], DEFAULTS[0]].map(|lints| lints.split_once("[clippy]").unwrap().0);
-    assert_decided(files, &listed(RUSTC), &listed(RUSTC));
+    assert_decided(sections("rust"), &listed(RUSTC), &listed(RUSTC));
+}
+
+#[test]
+fn every_cargo_lint_decided() {
+    assert_decided(
+        sections("cargo"),
+        &listed(CARGO_LINTS),
+        &listed(CARGO_LINTS),
+    );
+}
+
+fn sections(tool: &str) -> [&'static str; 2] {
+    let header = format!("[{tool}]\n");
+    [PRESETS[0], DEFAULTS[0]].map(|lints| {
+        let (_, rest) = lints.split_once(&header).unwrap();
+        rest.split("\n[").next().unwrap()
+    })
 }
 
 #[test]

@@ -26,6 +26,7 @@ scrape:
 	$(SCRAPE) python wps.py
 	$(SCRAPE) python clippy.py
 	$(SCRAPE) python rustc.py
+	$(SCRAPE) python cargo.py
 
 release:
 	@test -f release_notes.md || { echo "For agent: write release_notes.md from the PRs since the previous tag"; exit 1; }
