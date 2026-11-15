@@ -114,6 +114,7 @@ fn every_lint_decided() {
     );
 }
 
+#[track_caller]
 fn tool_decided(
     tool: &str,
     groups: &[&'static str],
@@ -145,6 +146,7 @@ fn every_clippy_setting_decided() {
     );
 }
 
+#[track_caller]
 fn assert_decided(files: [&str; 2], required: &BTreeSet<&str>, known: &BTreeSet<&str>) {
     let [preset, defaults] =
         files.map(|file| file.lines().filter_map(name).collect::<BTreeSet<_>>());
