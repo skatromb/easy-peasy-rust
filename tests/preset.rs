@@ -153,15 +153,15 @@ fn every_clippy_setting_decided() {
 
 #[track_caller]
 fn assert_decided(files: [&str; 2], required: &BTreeSet<&str>, known: &BTreeSet<&str>) {
-    let [preset, defaults] =
+    let [picked, skipped] =
         files.map(|file| file.lines().filter_map(name).collect::<BTreeSet<_>>());
-    let decided = &preset | &defaults;
-    let undecided: Vec<&&str> = required.difference(&decided).collect();
-    let unknown: Vec<&&str> = decided.difference(known).collect();
-    let twice: Vec<&&str> = preset.intersection(&defaults).collect();
+    let unpicked: BTreeSet<&str> = required.difference(&picked).copied().collect();
+    let unknown: Vec<&&str> = picked.difference(known).collect();
+    let undecided: Vec<&&str> = unpicked.difference(&skipped).collect();
+    let stray: Vec<&&str> = skipped.difference(&unpicked).collect();
     assert!(
-        undecided.is_empty() && unknown.is_empty() && twice.is_empty(),
-        "undecided: {undecided:?}, unknown: {unknown:?}, twice: {twice:?}"
+        unknown.is_empty() && undecided.is_empty() && stray.is_empty(),
+        "unknown: {unknown:?}, undecided: {undecided:?}, stray: {stray:?}"
     );
 }
 
