@@ -99,12 +99,12 @@ fn removal(target: &Table, names: &BTreeSet<String>, mut block: Block) -> Block 
 fn old_names(target: &Table, preset: &Table) -> BTreeSet<String> {
     let mut in_preset_block = false;
     rules(target)
-        .filter(|&(key, _)| {
+        .filter(|&(key, setting)| {
             in_preset_block = header(key).map_or_else(
                 || in_preset_block && !after_gap(key),
                 |title| title != YOURS,
             );
-            in_preset_block && !preset.contains_key(key.get())
+            in_preset_block && setting.is_value() && !preset.contains_key(key.get())
         })
         .map(|(key, _)| key.get().to_owned())
         .collect()
@@ -143,7 +143,7 @@ fn lay_out(target: &mut Table, preset: &Table) {
     let gap = title_blocks(target, &wanted);
     if let Some((mut first, _)) = target
         .iter_mut()
-        .find(|(key, _)| rank(key.get()) == usize::MAX)
+        .find(|(key, setting)| setting.is_value() && rank(key.get()) == usize::MAX)
     {
         let own = first.leaf_decor().prefix().and_then(RawString::as_str);
         let comments = own.map(unmarked).unwrap_or_default();

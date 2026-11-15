@@ -210,6 +210,21 @@ fn asks_to_remove_what_the_preset_dropped() {
     );
 }
 
+#[test]
+fn keeps_your_lint_table_after_a_preset_block() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let with_table = format!(
+        "{}\n[lints.rust.unexpected_cfgs]\nlevel = \"warn\"\n",
+        read(&dir, "Cargo.toml")
+    );
+    fs::write(dir.path().join("Cargo.toml"), &with_table).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "Cargo.toml"), with_table);
+}
+
 fn with_old_preset_lines(dir: &TempDir) -> [String; 2] {
     assert!(install(dir, &[]).status.success());
     let installed = [read(dir, "Cargo.toml"), read(dir, "clippy.toml")];
