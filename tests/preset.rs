@@ -20,14 +20,33 @@ const PEDANTIC: &str = include_str!("../rules/external/clippy/pedantic.md");
 const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 const SETTINGS: &str = include_str!("../rules/external/clippy/settings.md");
 const RUSTC: &str = include_str!("../rules/external/rustc/allowed-by-default.md");
+const CARGO_PEDANTIC: &str = include_str!("../rules/external/cargo/pedantic.md");
+const CARGO_RESTRICTION: &str = include_str!("../rules/external/cargo/restriction.md");
+const LISTINGS: [&str; 8] = [
+    CARGO,
+    NURSERY,
+    PEDANTIC,
+    RESTRICTION,
+    SETTINGS,
+    RUSTC,
+    CARGO_PEDANTIC,
+    CARGO_RESTRICTION,
+];
 const TOOLCHAIN: &str = include_str!("../rust-toolchain.toml");
-const GROUPS: [&str; 9] = [
+const CLIPPY_GROUPS: [&str; 9] = [
     "cargo",
     "complexity",
     "correctness",
     "nursery",
     "pedantic",
     "perf",
+    "restriction",
+    "style",
+    "suspicious",
+];
+const CARGO_GROUPS: [&str; 5] = [
+    "correctness",
+    "pedantic",
     "restriction",
     "style",
     "suspicious",
@@ -64,7 +83,7 @@ fn entries(document: &DocumentMut) -> BTreeSet<String> {
 fn listings_match_toolchain() {
     let toolchain: DocumentMut = TOOLCHAIN.parse().unwrap();
     let rust = toolchain["toolchain"]["channel"].as_str().unwrap();
-    for listing in [CARGO, NURSERY, PEDANTIC, RESTRICTION, SETTINGS, RUSTC] {
+    for listing in LISTINGS {
         let (_, header) = listing.split_once("as of Rust ").unwrap();
         let scraped = header
             .split_whitespace()
@@ -77,17 +96,31 @@ fn listings_match_toolchain() {
 
 #[test]
 fn every_clippy_lint_decided() {
-    let files = [PRESETS[0], DEFAULTS[0]].map(|lints| lints.split_once("[clippy]").unwrap().1);
-    let required = listed(RESTRICTION).into_iter().chain(GROUPS);
+    let required = listed(RESTRICTION).into_iter().chain(CLIPPY_GROUPS);
     let listings = [CARGO, NURSERY, PEDANTIC, RESTRICTION];
-    let known = listings.into_iter().flat_map(listed).chain(GROUPS);
-    assert_decided(files, &required.collect(), &known.collect());
+    let known = listings.into_iter().flat_map(listed).chain(CLIPPY_GROUPS);
+    assert_decided(sections("clippy"), &required.collect(), &known.collect());
 }
 
 #[test]
 fn every_rustc_lint_decided() {
-    let files = [PRESETS[0], DEFAULTS[0]].map(|lints| lints.split_once("[clippy]").unwrap().0);
-    assert_decided(files, &listed(RUSTC), &listed(RUSTC));
+    assert_decided(sections("rust"), &listed(RUSTC), &listed(RUSTC));
+}
+
+#[test]
+fn every_cargo_lint_decided() {
+    let required = listed(CARGO_RESTRICTION).into_iter().chain(CARGO_GROUPS);
+    let listings = [CARGO_PEDANTIC, CARGO_RESTRICTION];
+    let known = listings.into_iter().flat_map(listed).chain(CARGO_GROUPS);
+    assert_decided(sections("cargo"), &required.collect(), &known.collect());
+}
+
+fn sections(tool: &str) -> [&'static str; 2] {
+    let header = format!("[{tool}]\n");
+    [PRESETS[0], DEFAULTS[0]].map(|lints| {
+        let (_, rest) = lints.split_once(&header).unwrap();
+        rest.split("\n[").next().unwrap()
+    })
 }
 
 #[test]
@@ -120,14 +153,17 @@ fn listed(listing: &str) -> BTreeSet<&str> {
 }
 
 #[test]
-fn preset_keys_sorted() {
+fn preset_keys_sorted_groups_first() {
     for block in PRESETS
         .iter()
         .chain(&DEFAULTS)
         .flat_map(|file| file.split("\n\n"))
     {
-        let names: Vec<&str> = block.lines().filter_map(name).collect();
-        assert!(names.is_sorted(), "not sorted: {names:?}");
+        let keys: Vec<_> = block
+            .lines()
+            .filter_map(|line| Some((!line.contains("priority = -1"), name(line)?)))
+            .collect();
+        assert!(keys.is_sorted(), "not sorted: {keys:?}");
     }
 }
 

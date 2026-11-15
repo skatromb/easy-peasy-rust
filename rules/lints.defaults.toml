@@ -57,3 +57,14 @@ separated_literal_suffix = "Opposite of `unseparated_literal_suffix`."
 single_call_fn = "Small named functions are often called once."
 std_instead_of_alloc = "For `no_std`."
 std_instead_of_core = "For `no_std`."
+
+[cargo]
+# Groups
+correctness = "Outright wrong manifests fail the build."
+restriction = "Picked lint by lint, as with clippy."
+style = "Idiomatic manifests."
+suspicious = "Most likely wrong manifests."
+
+# Restriction lints
+non_snake_case_features = "Opposite of `non_kebab_case_features`."
+non_snake_case_packages = "Opposite of `non_kebab_case_packages`."

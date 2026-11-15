@@ -195,3 +195,9 @@ large_include_file = "warn"
 redundant_type_annotations = "warn"
 semicolon_inside_block = "warn"
 unseparated_literal_suffix = "warn"
+
+[lints.cargo]
+# easy-peasy: Manifest
+pedantic = { level = "warn", priority = -1 }
+non_kebab_case_features = "warn"
+non_kebab_case_packages = "warn"

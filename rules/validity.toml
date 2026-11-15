@@ -142,6 +142,11 @@ use_debug = "1.74"
 verbose_file_reads = "1.74"
 wildcard_enum_match_arm = "1.74"
 
+[cargo]
+non_kebab_case_features = "1.100"
+non_kebab_case_packages = "1.100"
+pedantic = "1.100"
+
 ["clippy.toml"]
 allow-dbg-in-tests = "1.63"
 allow-expect-in-tests = "1.63"
