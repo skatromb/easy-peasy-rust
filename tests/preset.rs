@@ -20,15 +20,17 @@ const PEDANTIC: &str = include_str!("../rules/external/clippy/pedantic.md");
 const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 const SETTINGS: &str = include_str!("../rules/external/clippy/settings.md");
 const RUSTC: &str = include_str!("../rules/external/rustc/allowed-by-default.md");
+const RUSTDOC: &str = include_str!("../rules/external/rustdoc/allowed-by-default.md");
 const CARGO_PEDANTIC: &str = include_str!("../rules/external/cargo/pedantic.md");
 const CARGO_RESTRICTION: &str = include_str!("../rules/external/cargo/restriction.md");
-const LISTINGS: [&str; 8] = [
+const LISTINGS: [&str; 9] = [
     CARGO,
     NURSERY,
     PEDANTIC,
     RESTRICTION,
     SETTINGS,
     RUSTC,
+    RUSTDOC,
     CARGO_PEDANTIC,
     CARGO_RESTRICTION,
 ];
@@ -105,6 +107,11 @@ fn every_clippy_lint_decided() {
 #[test]
 fn every_rustc_lint_decided() {
     assert_decided(sections("rust"), &listed(RUSTC), &listed(RUSTC));
+}
+
+#[test]
+fn every_rustdoc_lint_decided() {
+    assert_decided(sections("rustdoc"), &listed(RUSTDOC), &listed(RUSTDOC));
 }
 
 #[test]

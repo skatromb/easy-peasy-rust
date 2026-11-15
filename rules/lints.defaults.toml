@@ -58,6 +58,9 @@ single_call_fn = "Small named functions are often called once."
 std_instead_of_alloc = "For `no_std`."
 std_instead_of_core = "For `no_std`."
 
+[rustdoc]
+missing_crate_level_docs = "Duplicates rustc `missing_docs`."
+
 [cargo]
 # Groups
 correctness = "Outright wrong manifests fail the build."

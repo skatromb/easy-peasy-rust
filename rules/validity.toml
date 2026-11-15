@@ -142,6 +142,10 @@ use_debug = "1.74"
 verbose_file_reads = "1.74"
 wildcard_enum_match_arm = "1.74"
 
+[rustdoc]
+private_doc_tests = "1.74"
+unescaped_backticks = "1.74"
+
 [cargo]
 non_kebab_case_features = "1.100"
 non_kebab_case_packages = "1.100"

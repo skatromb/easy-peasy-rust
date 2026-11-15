@@ -26,6 +26,7 @@ scrape:
 	$(SCRAPE) python wps.py
 	$(SCRAPE) python clippy.py
 	$(SCRAPE) python rustc.py
+	$(SCRAPE) python rustdoc.py
 	$(SCRAPE) python cargo.py
 
 release:
