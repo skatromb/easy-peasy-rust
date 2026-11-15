@@ -198,7 +198,6 @@ unseparated_literal_suffix = "warn"
 
 [lints.cargo]
 # easy-peasy: Manifest
-manual_readme = "warn"
-non_kebab_case_bins = "warn"
+pedantic = { level = "warn", priority = -1 }
 non_kebab_case_features = "warn"
 non_kebab_case_packages = "warn"

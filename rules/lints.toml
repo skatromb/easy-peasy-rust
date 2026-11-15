@@ -173,7 +173,6 @@ unseparated_literal_suffix = "warn" # `1_u32` over `1u32`.
 
 [cargo]
 # easy-peasy: Manifest
-manual_readme = "warn" # Cargo finds `README.md` on its own.
-non_kebab_case_bins = "warn" # `my-tool`, like most command line tools.
+pedantic = { level = "warn", priority = -1 } # Strict but sound.
 non_kebab_case_features = "warn" # One style, the one most top crates use.
 non_kebab_case_packages = "warn" # Same.

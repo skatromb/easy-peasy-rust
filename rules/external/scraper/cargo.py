@@ -1,4 +1,4 @@
-"""Scrape Cargo lints allowed by default into ../cargo."""
+"""Scrape Cargo lints allowed by default, one file per group, into ../cargo."""
 
 import re
 from html import unescape
@@ -14,9 +14,9 @@ ALLOWED = re.compile(r'<h2 id="allowed-by-default".*?<ul>(.*?)</ul>', re.DOTALL)
 NAME = re.compile(r"<code>([a-z0-9_]+)</code>")
 CODE = re.compile(r"</?code>")
 TAG = re.compile(r"<[^>]+>")
-HEAD = f"""# Cargo allowed by default
+HEAD = """# Cargo {group}
 
-Every Cargo lint that is allowed by default as of Rust {RUST}.
+Every lint of the Cargo `{group}` group that is allowed by default as of Rust {rust}.
 
 | Lint | Description |
 | --- | --- |
@@ -24,10 +24,18 @@ Every Cargo lint that is allowed by default as of Rust {RUST}.
 
 
 def main() -> None:
-    page = fetched()
-    rows = [lint_row(lint, page) for lint in allowed_lints(page)]
     TARGET.mkdir(parents=True, exist_ok=True)
-    (TARGET / "allowed-by-default.md").write_text(HEAD + "".join(rows))
+    for name, rows in grouped_rows(fetched()).items():
+        head = HEAD.format(group=name, rust=RUST)
+        (TARGET / f"{name}.md").write_text(head + "".join(rows))
+
+
+def grouped_rows(page: str) -> dict[str, list[str]]:
+    groups: dict[str, list[str]] = {}
+    for lint in allowed_lints(page):
+        rows = groups.setdefault(group(lint, page), [])
+        rows.append(lint_row(lint, page))
+    return groups
 
 
 def fetched() -> str:
@@ -40,6 +48,15 @@ def allowed_lints(page: str) -> list[str]:
     if allowed is None:
         raise ValueError(f"No allowed-by-default list in {SOURCE}")
     return NAME.findall(allowed.group(1))
+
+
+def group(lint: str, page: str) -> str:
+    section = re.search(
+        rf'<h2 id="{lint}".*?Group: <code>([a-z]+)</code>', page, re.DOTALL
+    )
+    if section is None:
+        raise ValueError(f"No group of `{lint}` in {SOURCE}")
+    return section.group(1)
 
 
 def lint_row(lint: str, page: str) -> str:

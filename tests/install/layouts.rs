@@ -128,7 +128,7 @@ fn rearranges_moved_lints() {
     let dir = project("crate");
     assert!(install(&dir, &[]).status.success());
     let installed = read(&dir, "Cargo.toml");
-    let lint = "manual_readme = \"warn\"\n";
+    let lint = "non_kebab_case_features = \"warn\"\n";
     let moved = format!("{}{lint}", installed.replace(lint, ""));
     fs::write(dir.path().join("Cargo.toml"), moved).unwrap();
 
