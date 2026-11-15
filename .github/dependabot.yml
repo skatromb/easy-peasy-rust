@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Stockholm
     assignees: [skatromb]
 
   - package-ecosystem: cargo
