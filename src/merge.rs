@@ -9,7 +9,12 @@ use crate::toolchain::Toolchain;
 
 const LINTS: &str = include_str!("../rules/lints.toml");
 const SETTINGS: &str = include_str!("../rules/clippy.toml");
-const TOOLS: [Kind; 3] = [Kind::RustcLint, Kind::ClippyLint, Kind::CargoLint];
+const TOOLS: [Kind; 4] = [
+    Kind::RustcLint,
+    Kind::ClippyLint,
+    Kind::RustdocLint,
+    Kind::CargoLint,
+];
 const MARK: &str = "# easy-peasy:";
 
 type Rule<'preset> = (&'preset Key, &'preset Item);

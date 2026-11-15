@@ -63,10 +63,14 @@ fn matches_the_preset_after_yes_to_everything() {
 
     let questions = answer(ask(&dir), "y");
 
-    assert!(!questions.iter().any(|asked| asked.contains("rustdoc")));
+    assert!(
+        questions
+            .iter()
+            .any(|asked| asked.contains("rustdoc::broken_intra_doc_links"))
+    );
     let cargo_toml = read(&dir, "Cargo.toml");
     assert!(!cargo_toml.contains("float_arithmetic"));
-    assert!(cargo_toml.contains("broken_intra_doc_links"));
+    assert!(!cargo_toml.contains("broken_intra_doc_links"));
     let check = install(&dir, &["--check", "--drop-existing"]);
     assert_eq!(String::from_utf8(check.stdout).unwrap(), MATCHING);
 }

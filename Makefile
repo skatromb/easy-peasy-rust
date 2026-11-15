@@ -6,6 +6,7 @@ VERSION = $(shell cargo metadata --no-deps --format-version 1 | jq -r '.packages
 lint:
 	cargo fmt --check
 	cargo clippy --all-targets --config 'build.warnings="deny"'
+	cargo doc --no-deps --config 'build.warnings="deny"'
 
 lint-python:
 	$(SCRAPE) ruff format --check .
@@ -26,6 +27,7 @@ scrape:
 	$(SCRAPE) python wps.py
 	$(SCRAPE) python clippy.py
 	$(SCRAPE) python rustc.py
+	$(SCRAPE) python rustdoc.py
 	$(SCRAPE) python cargo.py
 
 release:

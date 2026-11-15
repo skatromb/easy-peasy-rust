@@ -14,6 +14,7 @@ static QUIET: AtomicBool = AtomicBool::new(true);
 pub(crate) enum Kind {
     ClippyLint,
     RustcLint,
+    RustdocLint,
     CargoLint,
     ClippySetting,
     Inheritance,
@@ -22,7 +23,9 @@ pub(crate) enum Kind {
 impl Kind {
     pub(crate) fn label(self, name: &str) -> String {
         match self {
-            Self::ClippyLint | Self::CargoLint => format!("{}::{name}", self.section()),
+            Self::ClippyLint | Self::RustdocLint | Self::CargoLint => {
+                format!("{}::{name}", self.section())
+            }
             Self::RustcLint | Self::ClippySetting | Self::Inheritance => name.to_owned(),
         }
     }
@@ -31,6 +34,7 @@ impl Kind {
         match self {
             Self::ClippyLint => "clippy",
             Self::RustcLint => "rust",
+            Self::RustdocLint => "rustdoc",
             Self::CargoLint => "cargo",
             Self::ClippySetting => "clippy.toml",
             Self::Inheritance => "lints",
@@ -41,6 +45,7 @@ impl Kind {
         match self {
             Self::ClippyLint => "clippy lints",
             Self::RustcLint => "rust lints",
+            Self::RustdocLint => "rustdoc lints",
             Self::CargoLint => "cargo lints",
             Self::ClippySetting => "settings",
             Self::Inheritance => "crates",
@@ -49,7 +54,7 @@ impl Kind {
 
     fn count(self, number: usize) -> String {
         let noun = match self {
-            Self::ClippyLint | Self::RustcLint | Self::CargoLint => "lint",
+            Self::ClippyLint | Self::RustcLint | Self::RustdocLint | Self::CargoLint => "lint",
             Self::ClippySetting => "setting",
             Self::Inheritance => "crate",
         };
@@ -61,6 +66,7 @@ impl Kind {
         match self {
             Self::ClippyLint => "https://rust-lang.github.io/rust-clippy/master/index.html",
             Self::RustcLint => "https://doc.rust-lang.org/rustc/lints/listing/index.html",
+            Self::RustdocLint => "https://doc.rust-lang.org/rustdoc/lints.html",
             Self::CargoLint => "https://doc.rust-lang.org/cargo/reference/lints.html",
             Self::ClippySetting => "https://doc.rust-lang.org/clippy/lint_configuration.html",
             Self::Inheritance => {

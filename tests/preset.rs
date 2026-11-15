@@ -20,15 +20,17 @@ const PEDANTIC: &str = include_str!("../rules/external/clippy/pedantic.md");
 const RESTRICTION: &str = include_str!("../rules/external/clippy/restriction.md");
 const SETTINGS: &str = include_str!("../rules/external/clippy/settings.md");
 const RUSTC: &str = include_str!("../rules/external/rustc/allowed-by-default.md");
+const RUSTDOC: &str = include_str!("../rules/external/rustdoc/allowed-by-default.md");
 const CARGO_PEDANTIC: &str = include_str!("../rules/external/cargo/pedantic.md");
 const CARGO_RESTRICTION: &str = include_str!("../rules/external/cargo/restriction.md");
-const LISTINGS: [&str; 8] = [
+const LISTINGS: [&str; 9] = [
     CARGO,
     NURSERY,
     PEDANTIC,
     RESTRICTION,
     SETTINGS,
     RUSTC,
+    RUSTDOC,
     CARGO_PEDANTIC,
     CARGO_RESTRICTION,
 ];
@@ -108,6 +110,12 @@ fn every_rustc_lint_decided() {
 }
 
 #[test]
+fn every_rustdoc_lint_decided() {
+    let known = listed(RUSTDOC).into_iter().chain(["all"]);
+    assert_decided(sections("rustdoc"), &["all"].into(), &known.collect());
+}
+
+#[test]
 fn every_cargo_lint_decided() {
     let required = listed(CARGO_RESTRICTION).into_iter().chain(CARGO_GROUPS);
     let listings = [CARGO_PEDANTIC, CARGO_RESTRICTION];
@@ -118,8 +126,9 @@ fn every_cargo_lint_decided() {
 fn sections(tool: &str) -> [&'static str; 2] {
     let header = format!("[{tool}]\n");
     [PRESETS[0], DEFAULTS[0]].map(|lints| {
-        let (_, rest) = lints.split_once(&header).unwrap();
-        rest.split("\n[").next().unwrap()
+        lints
+            .split_once(&header)
+            .map_or("", |(_, rest)| rest.split("\n[").next().unwrap())
     })
 }
 
