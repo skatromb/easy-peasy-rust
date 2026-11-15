@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::mem;
 
 use anyhow::{Context as _, Result};
@@ -16,6 +17,7 @@ const TOOLS: [Kind; 4] = [
     Kind::CargoLint,
 ];
 const MARK: &str = "# easy-peasy:";
+const YOURS: &str = "yours";
 
 type Rule<'preset> = (&'preset Key, &'preset Item);
 type Setting<'preset> = (&'preset Key, Item);
@@ -31,6 +33,7 @@ pub(crate) fn settings(
     let skipped = toolchain.retain(&mut known, Kind::ClippySetting);
 
     report_layout(clippy_toml, &all, Kind::ClippySetting)?;
+    remove_old(clippy_toml, &all, Kind::ClippySetting, choices)?;
     table(clippy_toml, &known, Kind::ClippySetting, choices)?;
     lay_out(clippy_toml, &all);
     Ok(skipped)
@@ -55,27 +58,63 @@ pub(crate) fn lints(
         skipped.extend(toolchain.retain(&mut known, kind));
         let yours = table_at(target, &[tool])?;
         report_layout(yours, all, kind)?;
+        remove_old(yours, all, kind, choices)?;
         table(yours, &known, kind, choices)?;
-        remove(yours, all, kind, choices)?;
+        remove_yours(yours, all, kind, choices)?;
         lay_out(yours, all);
     }
     Ok(skipped)
 }
 
-fn remove(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
-    let title = format!("Your {} lints not in `easy-peasy-rust`", kind.section());
-    let mut block = Block::new(kind, &title);
-    for (name, yours) in target
+fn remove_yours(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
+    let old = old_names(target, preset);
+    let yours: BTreeSet<String> = target
         .iter()
-        .filter(|&(name, _)| !preset.contains_key(name))
-    {
-        block.push(name, Some(yours), None);
-    }
-
-    if block.ask(Question::Remove, choices)? {
-        target.retain(|name, _| preset.contains_key(name));
+        .map(|(name, _)| name.to_owned())
+        .filter(|name| !preset.contains_key(name) && !old.contains(name))
+        .collect();
+    let title = format!("Your {} lints not in `easy-peasy-rust`", kind.section());
+    if removal(target, &yours, Block::new(kind, &title)).ask(Question::RemoveYours, choices)? {
+        target.retain(|name, _| !yours.contains(name));
     }
     Ok(())
+}
+
+fn remove_old(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
+    let old = old_names(target, preset);
+    let title = format!("Old `easy-peasy-rust` {}", kind.what());
+    if removal(target, &old, Block::new(kind, &title)).ask(Question::RemoveOld, choices)? {
+        target.retain(|name, _| !old.contains(name));
+    }
+    Ok(())
+}
+
+fn removal(target: &Table, names: &BTreeSet<String>, mut block: Block) -> Block {
+    for name in names {
+        block.push(name, target.get(name), None);
+    }
+    block
+}
+
+fn old_names(target: &Table, preset: &Table) -> BTreeSet<String> {
+    let mut in_preset_block = false;
+    rules(target)
+        .filter(|&(key, _)| {
+            in_preset_block = header(key).map_or_else(
+                || in_preset_block && !after_gap(key),
+                |title| title != YOURS,
+            );
+            in_preset_block && !preset.contains_key(key.get())
+        })
+        .map(|(key, _)| key.get().to_owned())
+        .collect()
+}
+
+fn after_gap(key: &Key) -> bool {
+    key.leaf_decor()
+        .prefix()
+        .and_then(RawString::as_str)
+        .is_some_and(|prefix| prefix.lines().any(|line| line.trim().is_empty()))
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {

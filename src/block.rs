@@ -41,7 +41,7 @@ impl Kind {
         }
     }
 
-    const fn what(self) -> &'static str {
+    pub(crate) const fn what(self) -> &'static str {
         match self {
             Self::ClippyLint => "clippy lints",
             Self::RustcLint => "rust lints",
@@ -80,7 +80,8 @@ impl Kind {
 pub(crate) enum Question {
     Adopt,
     Replace,
-    Remove,
+    RemoveYours,
+    RemoveOld,
 }
 
 impl Question {
@@ -88,7 +89,7 @@ impl Question {
         let question = match self {
             Self::Adopt => "Adopt?",
             Self::Replace => "Replace yours?",
-            Self::Remove => "Remove?",
+            Self::RemoveYours | Self::RemoveOld => "Remove?",
         };
         let hint = if self.default(choices) {
             "[Y/n]"
@@ -99,15 +100,16 @@ impl Question {
     }
 
     const fn default(self, choices: Choices) -> bool {
-        matches!(self, Self::Adopt) || choices.drop_existing
+        matches!(self, Self::Adopt | Self::RemoveOld) || choices.drop_existing
     }
 
     const fn verb(self, choices: Choices) -> &'static str {
         match self {
             Self::Adopt => "Added",
             Self::Replace if choices.drop_existing => "Replaced",
-            Self::Remove if choices.drop_existing => "Removed",
-            Self::Replace | Self::Remove => "Kept",
+            Self::RemoveYours if choices.drop_existing => "Removed",
+            Self::RemoveOld => "Removed",
+            Self::Replace | Self::RemoveYours => "Kept",
         }
     }
 }
@@ -167,7 +169,9 @@ impl Block {
 
     fn summarize(&mut self, question: Question, choices: Choices) -> Result<bool> {
         let what = match question {
-            Question::Adopt | Question::Remove => self.kind.count(self.changes.len()),
+            Question::Adopt | Question::RemoveYours | Question::RemoveOld => {
+                self.kind.count(self.changes.len())
+            }
             Question::Replace => {
                 let labels: Vec<&str> = self
                     .changes
