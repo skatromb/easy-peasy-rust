@@ -183,6 +183,7 @@ fn removes_what_the_preset_dropped_and_keeps_yours() {
     assert!(stdout.contains("\n  Removed Old `easy-peasy-rust` settings: 1 setting\n"));
     assert!(stdout.contains("\n  Removed Old `easy-peasy-rust` clippy lints: 1 lint\n"));
     assert!(stdout.contains("\n  Kept Your clippy lints not in `easy-peasy-rust`: 1 lint\n"));
+    assert!(!stdout.contains("Rearranged clippy lints"));
     assert_eq!(
         [read(&dir, "Cargo.toml"), read(&dir, "clippy.toml")],
         installed
@@ -208,6 +209,194 @@ fn asks_to_remove_what_the_preset_dropped() {
         [read(&dir, "Cargo.toml"), read(&dir, "clippy.toml")],
         installed
     );
+}
+
+#[test]
+fn keeps_your_lint_table_after_a_preset_block() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let mut with_table = read(&dir, "Cargo.toml");
+    with_table.push_str(
+        r#"
+[lints.rust.unexpected_cfgs]
+level = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), &with_table).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "Cargo.toml"), with_table);
+}
+
+#[test]
+fn keeps_your_lint_after_a_dotted_key() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let with_dotted = read(&dir, "Cargo.toml").replace(
+        r#"unused_qualifications = "warn""#,
+        r#"unused_qualifications = "warn"
+
+unexpected_cfgs.level = "warn"
+unused_crate_dependencies = "warn""#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_dotted).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains(r#"unused_crate_dependencies = "warn""#));
+}
+
+#[test]
+fn removes_an_old_lint_after_a_dotted_preset_lint() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let installed = read(&dir, "Cargo.toml").replace(
+        r#"pedantic = { level = "warn", priority = -1 }"#,
+        r#"pedantic.level = "warn"
+pedantic.priority = -1"#,
+    );
+    let old = installed.replace(
+        "pedantic.priority = -1",
+        r#"pedantic.priority = -1
+cast_abs_to_unsigned = "deny""#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), old).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "Cargo.toml"), installed);
+}
+
+#[test]
+fn removes_an_indented_old_lint() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let installed = read(&dir, "Cargo.toml");
+    let indented = installed.replace(
+        r#"# easy-peasy: No panics
+arithmetic_side_effects = "warn""#,
+        r#"  # easy-peasy: No panics
+  arithmetic_side_effects = "warn"
+  cast_abs_to_unsigned = "deny""#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), indented).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "Cargo.toml"), installed);
+}
+
+#[test]
+fn keeps_old_lints_you_kept() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let old = read(&dir, "Cargo.toml").replace(
+        "# easy-peasy: No panics",
+        r#"# easy-peasy: Gone A
+cast_abs_to_unsigned = "deny"
+
+# easy-peasy: Gone B
+let_underscore_drop = "warn"
+
+# easy-peasy: No panics"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), old).unwrap();
+    let _ = answer(ask(&dir), "n");
+
+    assert!(install(&dir, &[]).status.success());
+
+    let cargo_toml = read(&dir, "Cargo.toml");
+    assert!(cargo_toml.contains("cast_abs_to_unsigned"));
+    assert!(cargo_toml.contains("let_underscore_drop"));
+}
+
+#[test]
+fn keeps_your_dotted_lint_under_the_preset() {
+    let dir = project("crate");
+    let mut with_dotted = read(&dir, "Cargo.toml");
+    with_dotted.push_str(
+        r#"
+[lints.rust]
+unexpected_cfgs.level = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_dotted).unwrap();
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains(r#"unexpected_cfgs.level = "warn""#));
+}
+
+#[test]
+fn keeps_your_lint_after_your_lint_table() {
+    let dir = project("crate");
+    let mut with_table_first = read(&dir, "Cargo.toml");
+    with_table_first.push_str(
+        r#"
+[lints.rust.unexpected_cfgs]
+level = "warn"
+
+[lints.rust]
+unused_crate_dependencies = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_table_first).unwrap();
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains(r#"unused_crate_dependencies = "warn""#));
+}
+
+#[test]
+fn keeps_your_lint_table_after_a_preset_lint_table() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let mut with_tables = read(&dir, "Cargo.toml").replace(
+        r#"nursery = { level = "warn", priority = -1 }
+"#,
+        "",
+    );
+    with_tables.push_str(
+        r#"
+[lints.clippy.nursery]
+level = "warn"
+priority = -1
+[lints.clippy.mine]
+level = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_tables).unwrap();
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains("[lints.clippy.mine]"));
+}
+
+#[test]
+fn keeps_your_array_of_tables_in_clippy_toml() {
+    let dir = project("crate");
+    fs::write(
+        dir.path().join("clippy.toml"),
+        "too-many-lines-threshold = 50\n",
+    )
+    .unwrap();
+    assert!(install(&dir, &[]).status.success());
+    let mut with_methods = read(&dir, "clippy.toml");
+    with_methods.push_str(
+        r#"
+[[disallowed-methods]]
+path = "std::process::exit"
+"#,
+    );
+    fs::write(dir.path().join("clippy.toml"), &with_methods).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "clippy.toml"), with_methods);
 }
 
 fn with_old_preset_lines(dir: &TempDir) -> [String; 2] {
