@@ -329,6 +329,76 @@ unexpected_cfgs.level = "warn"
     assert!(read(&dir, "Cargo.toml").contains(r#"unexpected_cfgs.level = "warn""#));
 }
 
+#[test]
+fn keeps_your_lint_after_your_lint_table() {
+    let dir = project("crate");
+    let mut with_table_first = read(&dir, "Cargo.toml");
+    with_table_first.push_str(
+        r#"
+[lints.rust.unexpected_cfgs]
+level = "warn"
+
+[lints.rust]
+unused_crate_dependencies = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_table_first).unwrap();
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains(r#"unused_crate_dependencies = "warn""#));
+}
+
+#[test]
+fn keeps_your_lint_table_after_a_preset_lint_table() {
+    let dir = project("crate");
+    assert!(install(&dir, &[]).status.success());
+    let mut with_tables = read(&dir, "Cargo.toml").replace(
+        r#"nursery = { level = "warn", priority = -1 }
+"#,
+        "",
+    );
+    with_tables.push_str(
+        r#"
+[lints.clippy.nursery]
+level = "warn"
+priority = -1
+[lints.clippy.mine]
+level = "warn"
+"#,
+    );
+    fs::write(dir.path().join("Cargo.toml"), with_tables).unwrap();
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert!(read(&dir, "Cargo.toml").contains("[lints.clippy.mine]"));
+}
+
+#[test]
+fn keeps_your_array_of_tables_in_clippy_toml() {
+    let dir = project("crate");
+    fs::write(
+        dir.path().join("clippy.toml"),
+        "too-many-lines-threshold = 50\n",
+    )
+    .unwrap();
+    assert!(install(&dir, &[]).status.success());
+    let mut with_methods = read(&dir, "clippy.toml");
+    with_methods.push_str(
+        r#"
+[[disallowed-methods]]
+path = "std::process::exit"
+"#,
+    );
+    fs::write(dir.path().join("clippy.toml"), &with_methods).unwrap();
+
+    assert!(install(&dir, &[]).status.success());
+
+    assert_eq!(read(&dir, "clippy.toml"), with_methods);
+}
+
 fn with_old_preset_lines(dir: &TempDir) -> [String; 2] {
     assert!(install(dir, &[]).status.success());
     let installed = [read(dir, "Cargo.toml"), read(dir, "clippy.toml")];

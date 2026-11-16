@@ -100,22 +100,14 @@ fn old_names(target: &Table, preset: &Table) -> BTreeSet<String> {
     let mut in_preset_block = false;
     rules(target)
         .filter(|&(key, setting)| {
-            in_preset_block = header(key, setting).map_or_else(
-                || in_preset_block && !after_gap(key, setting),
-                |title| title != YOURS,
-            );
+            let lines = line_prefix(key, setting).trim_end_matches([' ', '\t']);
+            in_preset_block = lines.lines().fold(in_preset_block, |inside, line| {
+                title(line).map_or_else(|| inside && !line.trim().is_empty(), |name| name != YOURS)
+            });
             in_preset_block && !preset.contains_key(key.get())
         })
         .map(|(key, _)| key.get().to_owned())
         .collect()
-}
-
-fn after_gap(key: &Key, setting: &Item) -> bool {
-    line_prefix(key, setting).is_some_and(|prefix| {
-        prefix
-            .split_inclusive('\n')
-            .any(|line| line.ends_with('\n') && line.trim().is_empty())
-    })
 }
 
 fn table(target: &mut Table, preset: &Table, kind: Kind, choices: Choices) -> Result<()> {
@@ -140,7 +132,10 @@ fn lay_out(target: &mut Table, preset: &Table) {
             .position(|(rule, _)| rule.get() == name)
             .unwrap_or(usize::MAX)
     };
-    target.sort_values_by(|one, _, other, _| rank(one.get()).cmp(&rank(other.get())));
+    let printed = |key: &Key, setting: &Item| (rank(key.get()), is_sub_table(setting));
+    target.sort_values_by(|one, first, other, second| {
+        printed(one, first).cmp(&printed(other, second))
+    });
     let gap = title_blocks(target, &wanted);
     let own: Vec<String> = target
         .iter()
@@ -154,8 +149,7 @@ fn unmark(target: &mut Table, own: &[String], gap: &str) {
     for (index, name) in own.iter().enumerate() {
         let comments = target
             .get_key_value(name)
-            .and_then(|(key, setting)| line_prefix(key, setting))
-            .map(unmarked)
+            .map(|(key, setting)| unmarked(line_prefix(key, setting)))
             .unwrap_or_default();
         let prefix = if index == 0 {
             format!("{gap}{}", comments.trim_start())
@@ -168,15 +162,20 @@ fn unmark(target: &mut Table, own: &[String], gap: &str) {
     }
 }
 
+fn is_sub_table(setting: &Item) -> bool {
+    setting.as_table().is_some_and(|table| !table.is_dotted())
+}
+
 fn title_blocks(target: &mut Table, preset: &[Rule<'_>]) -> &'static str {
     let mut gap = "";
     for block in blocks(preset) {
-        let title = block
-            .first()
-            .and_then(|&(key, setting)| header(key, setting));
+        let title = block.first().and_then(|&(key, _)| header(key));
         let mut prefix = format!("{gap}{MARK} {}\n", title.unwrap_or_default());
         for &(key, _) in block {
-            if let Some((mine, setting)) = target.get_key_value_mut(key.get()) {
+            let inline = target
+                .get_key_value_mut(key.get())
+                .filter(|(_, setting)| !is_sub_table(setting));
+            if let Some((mine, setting)) = inline {
                 set_line_prefix(mine, setting, mem::take(&mut prefix));
                 gap = "\n";
             }
@@ -188,44 +187,54 @@ fn title_blocks(target: &mut Table, preset: &[Rule<'_>]) -> &'static str {
 fn unmarked(prefix: &str) -> String {
     prefix
         .split_inclusive('\n')
-        .filter(|line| !line.trim_start().starts_with(MARK))
+        .filter(|line| title(line).is_none())
         .collect()
 }
 
-fn line_prefix<'table>(key: &'table Key, setting: &'table Item) -> Option<&'table str> {
-    let prefix = match setting.as_table() {
-        Some(dotted) if dotted.is_dotted() => {
-            let (inner, nested) = rules(dotted).next()?;
-            return line_prefix(inner, nested);
+fn line_prefix<'table>(key: &'table Key, setting: &'table Item) -> &'table str {
+    let decor = match setting {
+        Item::Table(dotted) if dotted.is_dotted() => {
+            let first = rules(dotted).next();
+            return first.map_or("", |(inner, nested)| line_prefix(inner, nested));
         }
-        Some(table) => table.decor().prefix(),
-        None => key.leaf_decor().prefix(),
+        Item::Table(table) => table.decor(),
+        Item::ArrayOfTables(tables) => tables
+            .iter()
+            .next()
+            .map_or_else(|| key.leaf_decor(), Table::decor),
+        Item::None | Item::Value(_) => key.leaf_decor(),
     };
-    prefix.and_then(RawString::as_str)
+    decor
+        .prefix()
+        .and_then(RawString::as_str)
+        .unwrap_or_default()
 }
 
 fn set_line_prefix(mut key: KeyMut<'_>, setting: &mut Item, prefix: String) {
-    match setting.as_table_mut() {
-        Some(dotted) if dotted.is_dotted() => {
+    match setting {
+        Item::Table(dotted) if dotted.is_dotted() => {
             if let Some((inner, nested)) = dotted.iter_mut().next() {
                 set_line_prefix(inner, nested, prefix);
             }
         }
-        Some(table) => table.decor_mut().set_prefix(prefix),
-        None => key.leaf_decor_mut().set_prefix(prefix),
+        Item::Table(table) => table.decor_mut().set_prefix(prefix),
+        Item::ArrayOfTables(tables) => {
+            if let Some(first) = tables.iter_mut().next() {
+                first.decor_mut().set_prefix(prefix);
+            }
+        }
+        Item::None | Item::Value(_) => key.leaf_decor_mut().set_prefix(prefix),
     }
 }
 
 fn blocks<'preset>(
     preset: &'preset [Rule<'preset>],
 ) -> impl Iterator<Item = &'preset [Rule<'preset>]> {
-    preset.chunk_by(|_, &(key, setting)| header(key, setting).is_none())
+    preset.chunk_by(|_, &(key, _)| header(key).is_none())
 }
 
 fn adopt(target: &mut Table, preset: &[Rule<'_>], kind: Kind, choices: Choices) -> Result<()> {
-    let title = preset
-        .first()
-        .and_then(|&(key, setting)| header(key, setting));
+    let title = preset.first().and_then(|&(key, _)| header(key));
     let mut block = Block::new(kind, title.unwrap_or_default());
     let (missing, changed) = differing(target, preset);
 
@@ -254,11 +263,12 @@ fn differing<'preset>(target: &Table, preset: &[Rule<'preset>]) -> Split<Setting
         .partition(|(key, _)| !target.contains_key(key.get()))
 }
 
-fn header<'table>(key: &'table Key, setting: &'table Item) -> Option<&'table str> {
-    line_prefix(key, setting)?
-        .lines()
-        .find_map(|line| line.trim_start().strip_prefix(MARK))
-        .map(str::trim_start)
+fn header(key: &Key) -> Option<&str> {
+    key.leaf_decor().prefix()?.as_str()?.lines().find_map(title)
+}
+
+fn title(line: &str) -> Option<&str> {
+    line.trim_start().strip_prefix(MARK).map(str::trim)
 }
 
 fn rules(table: &Table) -> impl Iterator<Item = Rule<'_>> {
